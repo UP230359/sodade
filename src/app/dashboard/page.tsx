@@ -1,67 +1,40 @@
 "use client";
 
-import { useState } from "react";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Modal from "@/components/ui/Modal";
-import SummaryCard from "@/components/dashboard/SummaryCard";
+import { useAppSelector } from "@/store";
 
 export default function DashboardPage() {
-  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  // Verifying the Redux connection is active
+  const moodState = useAppSelector((state) => state.mood);
+  const userState = useAppSelector((state) => state.user);
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-12">
-      <div className="p-8 border-2 border-dashed border-neutral/30 rounded-2xl space-y-8 mt-12">
-        <div>
-          <h2 className="text-2xl font-bold">UI Component Testing Area</h2>
-        </div>
+    <div className="min-h-screen bg-[#FCFBF9] p-8 font-sans">
+      <div className="max-w-5xl mx-auto space-y-6">
+        <h1 className="text-3xl font-serif text-gray-900">Dashboard</h1>
 
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-secondary">Modal</h3>
-          <Button variant="primary" onClick={() => setIsTestModalOpen(true)}>
-            Open Test Modal
-          </Button>
-        </div>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wider">
+            Redux State Connection
+          </h2>
 
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-secondary">Inputs</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input label="What are you feeling right now?" placeholder="I feel..." />
-            <Input label="Any quick notes?" placeholder="Optional context..." type="text" />
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-xs font-bold text-gray-500 mb-2">Mood State</h3>
+              <pre className="text-xs text-gray-700 overflow-auto">
+                {JSON.stringify(moodState, null, 2)}
+              </pre>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-xs font-bold text-gray-500 mb-2">User State</h3>
+              <pre className="text-xs text-gray-700 overflow-auto">
+                {JSON.stringify(userState, null, 2)}
+              </pre>
+            </div>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-secondary">Button Variants</h3>
-          <div className="flex flex-wrap gap-4">
-            <Button variant="primary">Primary</Button>
-            <Button variant="secondary">Secondary</Button>
-            <Button variant="joy">Joy</Button>
-            <Button variant="calm">Calm</Button>
-            <Button variant="sadness">Sadness</Button>
-            <Button variant="anger">Anger</Button>
-            <Button variant="anxiety">Anxiety</Button>
-            <Button variant="neutral">Neutral</Button>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-secondary">Full Width Buttons</h3>
-          <div className="flex flex-col gap-3 max-w-md">
-            <Button variant="primary" fullWidth>Save Entry</Button>
-            <Button variant="neutral" fullWidth>Cancel</Button>
-          </div>
-        </div>
       </div>
-
-      <Modal
-        isOpen={isTestModalOpen}
-        onClose={() => setIsTestModalOpen(false)}
-        title="Log a New Moment"
-      >
-        Smth
-      </Modal>
-
     </div>
   );
 }
