@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
-  variant?: "primary" | "secondary" | "joy" | "calm" | "sadness" | "anger" | "anxiety" | "neutral";
+  variant?: "primary" | "secondary" | "joy" | "calm" | "sadness" | "anger" | "anxiety" | "neutral" | "black";
   fullWidth?: boolean;
 }
 
@@ -25,6 +25,7 @@ export default function Button({
     anger: "bg-anger text-white hover:bg-anger/90",
     anxiety: "bg-anxiety text-white hover:bg-anxiety/90",
     neutral: "bg-neutral text-slate-900 hover:bg-neutral/90",
+    black: "bg-black text-white hover:bg-black/90",
   };
 
   return (

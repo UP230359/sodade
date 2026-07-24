@@ -142,9 +142,7 @@ export default function JournalPage() {
                         <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
                             Journal
                         </h1>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                            0
-                        </span>
+
                     </div>
                 </div>
             </div>
@@ -156,46 +154,38 @@ export default function JournalPage() {
             <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12">
                 {/* Header */}
                 <div className="mb-8">
+                    <p className="text-sm text-amber-700/50">
+                        Daily Pages
+                    </p>
                     <div className="flex items-center gap-3 mb-1">
-                        <div className="p-2 bg-amber-100 rounded-xl">
-                            <svg className="h-6 w-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                        </div>
                         <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
                             Journal
                         </h1>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                            {entries.length}
-                        </span>
                     </div>
-                    <p className="text-sm text-muted-foreground ml-11">
-                        Daily Pages
-                    </p>
                 </div>
 
                 {/* Entry Editor */}
-                <div className="bg-white rounded-2xl shadow-lg border border-slate-200/80 overflow-hidden mb-8">
-                    <div className="p-5 md:p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2 text-sm text-slate-500">
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                </svg>
-                                <span>{editingEntry ? "Editing" : "New entry"}</span>
-                            </div>
-                            {editingEntry && (
-                                <button
-                                    onClick={handleCancelEdit}
-                                    className="text-xs text-slate-400 hover:text-slate-600"
-                                >
-                                    Cancel
-                                </button>
-                            )}
-                        </div>
+               <div className="bg-white rounded-2xl shadow-lg border border-slate-200/80 overflow-hidden mb-8">
+                  <div className="p-5 md:p-6">
+                      {editingEntry && (
+                          <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-2 text-sm text-slate-500">
+                                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                  </svg>
+                                  <span>Editing</span>
+                              </div>
+                              <button
+                                  onClick={handleCancelEdit}
+                                  className="text-xs text-slate-400 hover:text-slate-600"
+                              >
+                                  Cancel
+                              </button>
+                          </div>
+                      )}
 
-                        {/* Title Input */}
-                        <input
+                                      {/* Title Input */}
+                                      <input
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
@@ -217,12 +207,9 @@ export default function JournalPage() {
                         <div className="flex justify-end mt-6 pt-4 border-t border-slate-100">
                             <Button
                                 onClick={handleSaveEntry}
-                                variant="secondary"
+                                variant="black"
                             >
-                                <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                                </svg>
-                                {editingEntry ? "Update Entry" : "Save Entry"}
+                                Save Entry
                             </Button>
                         </div>
                     </div>
