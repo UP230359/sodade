@@ -138,9 +138,9 @@ export default function InsightsPage() {
             <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12">
                 {/* Header */}
                 <div className="mb-8">
-                    <p className="text-sm text-amber-700/60">
+                    <h2 className="text-naranja-Title">
                         Professional Guidance
-                    </p>
+                    </h2>
                     <div className="flex items-center gap-3 mb-1">
                         <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
                             Insights Inbox
@@ -160,14 +160,14 @@ export default function InsightsPage() {
                                 return (
                                     <div
                                         key={insight.id}
-                                        className="p-4 md:p-5 bg-[#1C1A17]"
+                                        className="card-dark"
                                     >
                                         <div className="flex items-start gap-3">
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2">
-                                                    <h3 className="font-medium text-amber-700/60">
+                                                    <h2 className="text-naranja-brillante">
                                                         {insight.title}
-                                                    </h3>
+                                                    </h2>
                                                 </div>
                                                 <p className="text-sm line-clamp-2 mt-0.5 text-white/80">
                                                     {insight.preview}
