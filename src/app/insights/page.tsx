@@ -8,8 +8,8 @@ import { useEffect } from "react";
 const MOCK_7DAY_ENTRIES = [
   {
     id: "mock-1",
-    mood: "happy" as const,
-    level: 4,
+    mood: "neutral" as const,
+    level: 3,
     note: "Returned to peace through evening practice.",
     tags: ["peaceful"],
     timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
@@ -24,8 +24,8 @@ const MOCK_7DAY_ENTRIES = [
   },
   {
     id: "mock-3",
-    mood: "sad" as const,
-    level: 2,
+    mood: "neutral" as const,
+    level: 3,
     note: "Feeling a bit down",
     tags: ["rest"],
     timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
@@ -56,10 +56,10 @@ const MOCK_7DAY_ENTRIES = [
   },
   {
     id: "mock-7",
-    mood: "happy" as const,
-    level: 4,
+    mood: "sad" as const,
+    level: 1,
     note: "Good day overall",
-    tags: ["positive"],
+    tags: ["rest"],
     timestamp: new Date().toISOString(),
   },
 ];
