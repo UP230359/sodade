@@ -25,6 +25,17 @@ interface ChartDataPoint {
   time: string;
 }
 
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{ payload: ChartDataPoint }>;
+}
+
+interface CustomDotProps {
+  cx?: number;
+  cy?: number;
+  payload?: ChartDataPoint;
+}
+
 const MOOD_COLORS: Record<MoodEntry["mood"], string> = {
   joy: "#FBBF24",
   calm: "#22C55E",
@@ -56,6 +67,38 @@ const MOOD_LABELS: Record<MoodEntry["mood"], string> = {
   disgust: "Disgust",
   surprise: "Surprise",
   trust: "Trust",
+};
+
+const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
+        <p className="font-semibold text-gray-900">{data.date}</p>
+        <p className="text-sm font-medium text-gray-700">{data.time}</p>
+        <p className="text-sm text-gray-600">{MOOD_LABELS[data.mood]}</p>
+        {data.note && <p className="text-xs text-gray-500 mt-1">"{data.note}"</p>}
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomDot = (props: CustomDotProps) => {
+  const { cx, cy, payload } = props;
+  if (cx === undefined || cy === undefined || !payload) return null;
+
+  const color = MOOD_COLORS[payload.mood];
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={8}
+      fill={color}
+      stroke="white"
+      strokeWidth={2}
+    />
+  );
 };
 
 export default function MoodChart() {
@@ -131,14 +174,12 @@ export default function MoodChart() {
         format: "a4",
       });
 
-      // Título principal
       pdf.setFontSize(24);
-      pdf.setTextColor(31, 41, 55); // gray-800
+      pdf.setTextColor(31, 41, 55);
       pdf.text("Emotion Timeline Report", 20, 25);
 
-      // Fecha de generación
       pdf.setFontSize(10);
-      pdf.setTextColor(107, 114, 128); // gray-500
+      pdf.setTextColor(107, 114, 128);
       pdf.text(
         `Generated on ${new Date().toLocaleDateString("en-US", {
           weekday: "long",
@@ -150,36 +191,31 @@ export default function MoodChart() {
         32
       );
 
-      // Línea divisoria
-      pdf.setDrawColor(229, 231, 235); // gray-200
+      pdf.setDrawColor(229, 231, 235);
       pdf.line(20, 35, 190, 35);
 
-      // GRÁFICO
       const imgWidth = 170;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       pdf.addImage(imgData, "PNG", 20, 40, imgWidth, imgHeight);
 
       let currentY = 45 + imgHeight + 15;
 
-      // ============ TABLA DE ESTADÍSTICAS ============
       pdf.setFontSize(14);
       pdf.setTextColor(31, 41, 55);
       pdf.text("Summary Statistics", 20, currentY);
 
       currentY += 8;
 
-      // Headers de tabla
       pdf.setFontSize(10);
-      pdf.setFillColor(243, 244, 246); // gray-100
+      pdf.setFillColor(243, 244, 246);
       pdf.rect(20, currentY, 170, 8, "F");
-      pdf.setTextColor(55, 65, 81); // gray-700
+      pdf.setTextColor(55, 65, 81);
       pdf.text("Metric", 25, currentY + 6);
       pdf.text("Value", 155, currentY + 6);
 
       currentY += 8;
 
-      // Datos de tabla
-      pdf.setTextColor(75, 85, 99); // gray-600
+      pdf.setTextColor(75, 85, 99);
       pdf.setFontSize(9);
 
       const statsRows = [
@@ -188,14 +224,13 @@ export default function MoodChart() {
         ["Entries This Week", `${stats.lastWeekEntries}`],
       ];
 
-      statsRows.forEach((row, idx) => {
+      statsRows.forEach((row) => {
         pdf.rect(20, currentY, 170, 7);
         pdf.text(row[0], 25, currentY + 5);
         pdf.text(row[1], 155, currentY + 5);
         currentY += 7;
       });
 
-      // ============ TABLA DE DISTRIBUCIÓN DE EMOCIONES ============
       currentY += 5;
 
       pdf.setFontSize(14);
@@ -204,7 +239,6 @@ export default function MoodChart() {
 
       currentY += 8;
 
-      // Headers
       pdf.setFontSize(10);
       pdf.setFillColor(243, 244, 246);
       pdf.rect(20, currentY, 170, 8, "F");
@@ -215,7 +249,6 @@ export default function MoodChart() {
 
       currentY += 8;
 
-      // Datos
       pdf.setTextColor(75, 85, 99);
       pdf.setFontSize(9);
 
@@ -230,7 +263,6 @@ export default function MoodChart() {
         }
       });
 
-      // ============ TABLA DE ENTRADAS RECIENTES ============
       currentY += 5;
 
       pdf.setFontSize(14);
@@ -239,7 +271,6 @@ export default function MoodChart() {
 
       currentY += 8;
 
-      // Headers
       pdf.setFontSize(10);
       pdf.setFillColor(243, 244, 246);
       pdf.rect(20, currentY, 170, 8, "F");
@@ -251,12 +282,11 @@ export default function MoodChart() {
 
       currentY += 8;
 
-      // Datos - últimas 10 entradas
       pdf.setTextColor(75, 85, 99);
       pdf.setFontSize(8);
 
       const recentEntries = chartData.slice(-10).reverse();
-      recentEntries.forEach((entry, idx) => {
+      recentEntries.forEach((entry) => {
         const notePreview = entry.note ? entry.note.substring(0, 20) : "-";
         pdf.rect(20, currentY, 170, 7);
         pdf.text(entry.date, 25, currentY + 5);
@@ -266,9 +296,8 @@ export default function MoodChart() {
         currentY += 7;
       });
 
-      // Footer
       pdf.setFontSize(8);
-      pdf.setTextColor(156, 163, 175); // gray-400
+      pdf.setTextColor(156, 163, 175);
       pdf.text(
         `Report generated by Sodade - Emotion Tracking Platform | Page 1`,
         20,
@@ -286,7 +315,6 @@ export default function MoodChart() {
 
   return (
     <div className="bg-gradient-to-b from-orange-50 to-white rounded-2xl shadow-lg p-8">
-      {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-serif font-bold text-gray-900 mb-1">
@@ -297,7 +325,6 @@ export default function MoodChart() {
           </p>
         </div>
 
-        {/* Download PDF Button */}
         {entries.length > 0 && (
           <button
             onClick={downloadPDF}
@@ -309,7 +336,6 @@ export default function MoodChart() {
         )}
       </div>
 
-      {/* Chart */}
       <div ref={chartRef} className="bg-white p-4 rounded-lg">
         {chartData.length === 0 ? (
           <div className="h-80 flex items-center justify-center text-gray-500">
@@ -335,48 +361,13 @@ export default function MoodChart() {
                   tickLine={false}
                 />
                 <YAxis hide={true} domain={[1, 5]} />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload as ChartDataPoint;
-                      return (
-                        <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-                          <p className="font-semibold text-gray-900">{data.date}</p>
-                          <p className="text-sm font-medium text-gray-700">
-                            {data.time}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {MOOD_LABELS[data.mood]}
-                          </p>
-                          {data.note && (
-                            <p className="text-xs text-gray-500 mt-1">"{data.note}"</p>
-                          )}
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
+                <Tooltip content={<CustomTooltip />} />
                 <Line
                   type="monotone"
                   dataKey="level"
                   stroke="#F97316"
                   strokeWidth={2}
-                  dot={(props) => {
-                    const { cx, cy, payload } = props;
-                    const data = payload as ChartDataPoint;
-                    const color = MOOD_COLORS[data.mood];
-                    return (
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={8}
-                        fill={color}
-                        stroke="white"
-                        strokeWidth={2}
-                      />
-                    );
-                  }}
+                  dot={<CustomDot />}
                   isAnimationActive={false}
                 />
               </LineChart>
@@ -385,7 +376,6 @@ export default function MoodChart() {
         )}
       </div>
 
-      {/* Latest Entry Card */}
       {latestEntry && (
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 flex items-start gap-4 mt-6">
           <div
@@ -410,7 +400,6 @@ export default function MoodChart() {
         </div>
       )}
 
-      {/* All Entries Table */}
       {chartData.length > 0 && (
         <div className="mt-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
