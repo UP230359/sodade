@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export interface MoodEntry {
   id: string;
-  mood: "excited" | "happy" | "neutral" | "sad" | "angry";
+  mood: "joy" | "calm" | "sadness" | "anger" | "fear" | "disgust" | "surprise" | "trust";
   level: number; // 1 to 5
   note: string;
   tags: string[];
@@ -14,11 +14,14 @@ interface MoodState {
 }
 
 const MOOD_LEVELS: Record<MoodEntry["mood"], number> = {
-  excited: 5,
-  happy: 4,
-  neutral: 3,
-  sad: 2,
-  angry: 1,
+  joy: 5,
+  calm: 4,
+  sadness: 2,
+  anger: 1,
+  fear: 2,
+  disgust: 1,
+  surprise: 3,
+  trust: 4,
 };
 
 const initialState: MoodState = {
@@ -47,7 +50,7 @@ const moodSlice = createSlice({
         timestamp: new Date().toISOString(),
       };
       state.entries.unshift(newEntry);
-      
+
       // Persist to localStorage if window exists
       if (typeof window !== "undefined") {
         try {

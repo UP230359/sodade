@@ -5,27 +5,36 @@ import { MoodEntry } from "@/store/moodSlice";
 import { useMemo } from "react";
 
 const MOOD_COLORS: Record<MoodEntry["mood"], string> = {
-  excited: "bg-yellow-100 text-yellow-700",
-  happy: "bg-green-100 text-green-700",
-  neutral: "bg-blue-100 text-blue-700",
-  sad: "bg-indigo-100 text-indigo-700",
-  angry: "bg-red-100 text-red-700",
+  joy: "bg-yellow-100 text-yellow-700",
+  calm: "bg-green-100 text-green-700",
+  sadness: "bg-blue-100 text-blue-700",
+  anger: "bg-red-100 text-red-700",
+  fear: "bg-purple-100 text-purple-700",
+  disgust: "bg-emerald-100 text-emerald-700",
+  surprise: "bg-orange-100 text-orange-700",
+  trust: "bg-indigo-100 text-indigo-700",
 };
 
 const MOOD_ICONS: Record<MoodEntry["mood"], string> = {
-  excited: ":D",
-  happy: ":)",
-  neutral: ":|",
-  sad: ":(",
-  angry: ">:(",
+  joy: "😊",
+  calm: "😌",
+  sadness: "😢",
+  anger: "😠",
+  fear: "😨",
+  disgust: "🤢",
+  surprise: "😲",
+  trust: "🤝",
 };
 
 const MOOD_LABELS: Record<MoodEntry["mood"], string> = {
-  excited: "Excited",
-  happy: "Happy",
-  neutral: "Neutral",
-  sad: "Sad",
-  angry: "Angry",
+  joy: "Joy",
+  calm: "Calm",
+  sadness: "Sadness",
+  anger: "Anger",
+  fear: "Fear",
+  disgust: "Disgust",
+  surprise: "Surprise",
+  trust: "Trust",
 };
 
 export default function MoodHistory() {
