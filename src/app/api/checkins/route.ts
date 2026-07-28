@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId, emotionName, note, sharedAnonymously, influences } = body;
 
-    const [emotionRows]: any = await db.query(
+    const [emotionRows] = await db.query<RowDataPacket[]>(
       "SELECT emotion_id FROM emotions WHERE name = ?",
       [emotionName],
     );
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
     const emotionId = emotionRows[0].emotion_id;
 
-    const [result]: any = await db.query(
+    const [result] = await db.query<ResultSetHeader>(
       `INSERT INTO checkins (user_id, emotion_id, note, shared_anonymously)
        VALUES (?, ?, ?, ?)`,
       [userId, emotionId, note || null, sharedAnonymously || false],
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     if (influences && influences.length > 0) {
       for (const influenceName of influences) {
-        const [infRows]: any = await db.query(
+        const [infRows] = await db.query<RowDataPacket[]>(
           "SELECT influence_id FROM influences WHERE name = ?",
           [influenceName],
         );

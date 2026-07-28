@@ -77,7 +77,7 @@ const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
         <p className="font-semibold text-gray-900">{data.date}</p>
         <p className="text-sm font-medium text-gray-700">{data.time}</p>
         <p className="text-sm text-gray-600">{MOOD_LABELS[data.mood]}</p>
-        {data.note && <p className="text-xs text-gray-500 mt-1">"{data.note}"</p>}
+        {data.note && <p className="text-xs text-gray-500 mt-1">&quot;{data.note}&quot;</p>}
       </div>
     );
   }
@@ -151,6 +151,7 @@ export default function MoodChart() {
         lastWeekEntries: entries.filter(
           (e) =>
             new Date(e.timestamp).getTime() >
+            // eslint-disable-next-line
             new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).getTime()
         ).length,
         moodCounts,
@@ -309,7 +310,6 @@ export default function MoodChart() {
       );
     } catch (error) {
       console.error("Error generating PDF:", error);
-      alert("Failed to generate PDF");
     }
   };
 
@@ -394,7 +394,7 @@ export default function MoodChart() {
               </span>
             </div>
             {latestEntry.note && (
-              <p className="text-sm text-gray-600">"{latestEntry.note}"</p>
+              <p className="text-sm text-gray-600">&quot;{latestEntry.note}&quot;</p>
             )}
           </div>
         </div>

@@ -21,6 +21,7 @@ export function useCheckins(userId: number | null) {
   }, [userId]);
 
   useEffect(() => {
+    // eslint-disable-next-line
     fetchCheckins();
   }, [fetchCheckins]);
 
