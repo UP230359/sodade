@@ -8,11 +8,14 @@ import Badge from "@/components/ui/Badge";
 type MoodType = MoodEntry["mood"];
 
 const MOODS: { label: string; value: MoodType; icon: string }[] = [
-  { label: "Excited", value: "excited", icon: "🤩" },
-  { label: "Happy", value: "happy", icon: "😊" },
-  { label: "Neutral", value: "neutral", icon: "😐" },
-  { label: "Sad", value: "sad", icon: "😢" },
-  { label: "Angry", value: "angry", icon: "😠" },
+  { label: "Joy", value: "joy", icon: "😊" },
+  { label: "Calm", value: "calm", icon: "😌" },
+  { label: "Sadness", value: "sadness", icon: "😢" },
+  { label: "Anger", value: "anger", icon: "😠" },
+  { label: "Fear", value: "fear", icon: "😨" },
+  { label: "Disgust", value: "disgust", icon: "🤢" },
+  { label: "Surprise", value: "surprise", icon: "😲" },
+  { label: "Trust", value: "trust", icon: "🤝" },
 ];
 
 const INFLUENCE_TAGS: { label: string; variant: "primary" | "secondary" | "joy" | "calm" | "sadness" | "anger" | "anxiety" | "neutral" }[] = [
