@@ -6,25 +6,30 @@ import Link from "next/link";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { useAppDispatch } from "@/store";
-import { login } from "@/store/userSlice";
+import { setUser } from "@/store/userSlice";
+import { loginUser } from "@/lib/api";
 
 export default function LoginPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    dispatch(
-      login({
-        id: "dummy-id",
-        email,
-        name: email.split("@")[0],
-      })
-    );
-    router.push("/dashboard");
+    setError("");
+    setIsSubmitting(true);
+    try {
+      const { user } = await loginUser({ email, password });
+      dispatch(setUser(user));
+      router.push(user.accountType === "professional" ? "/portal" : "/dashboard");
+    } catch (err) {
+      setError("Invalid email or password");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -37,6 +42,12 @@ export default function LoginPage() {
           <p className="text-secondary mt-2">Sign in to continue your journey.</p>
         </div>
 
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 font-medium text-center mb-5">
+            {error}
+          </p>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <Input
             label="Email Address"
@@ -47,7 +58,6 @@ export default function LoginPage() {
             required
             className="!bg-muted !border-transparent !rounded-lg focus:!ring-primary/20"
           />
-
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-sm font-medium text-secondary">Password</label>
@@ -64,16 +74,15 @@ export default function LoginPage() {
               className="!bg-muted !border-transparent !rounded-lg focus:!ring-primary/20"
             />
           </div>
-
           <Button
             type="submit"
             fullWidth
-            className="!bg-foreground !text-background hover:!bg-foreground/90 !rounded-lg !font-normal"
+            disabled={isSubmitting}
+            className="!bg-foreground !text-background hover:!bg-foreground/90 !rounded-lg !font-normal disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Sign In
+            {isSubmitting ? "Signing in..." : "Sign In"}
           </Button>
         </form>
-
         <p className="text-center text-sm text-secondary mt-6">
           Don&apos;t have an account?{" "}
           <Link href="/register" className="text-foreground font-medium hover:underline">
