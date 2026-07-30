@@ -1,9 +1,10 @@
 "use client";
 
-import { useAppDispatch } from "@/store";
-import { addMoodEntry, MoodEntry } from "@/store/moodSlice";
-import { useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/store";
+import { submitMoodEntry, fetchMoodEntries, MoodEntry } from "@/store/moodSlice";
+import { useState, useEffect } from "react";
 import Badge from "@/components/ui/Badge";
+import { TEMP_USER_ID } from "@/lib/constants";
 
 type MoodType = MoodEntry["mood"];
 
@@ -30,6 +31,14 @@ const INFLUENCE_TAGS: { label: string; variant: "primary" | "secondary" | "joy" 
 
 export default function CheckInForm() {
   const dispatch = useAppDispatch();
+  const submitting = useAppSelector((state) => state.mood.submitting);
+
+  // Evita un hydration mismatch en el botón: en el primer render (servidor
+  // y cliente antes de montar) "submitting" del store de Redux aún no está
+  // garantizado a coincidir entre ambos, así que hasta que el componente
+  // esté montado en el cliente, ignoramos su valor.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   // Local state
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
@@ -45,7 +54,7 @@ export default function CheckInForm() {
   };
 
   // Handle submit
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!selectedMood) {
@@ -53,25 +62,34 @@ export default function CheckInForm() {
       return;
     }
 
-    // Dispatch to Redux
-    dispatch(
-      addMoodEntry({
-        mood: selectedMood,
-        note: note || `I'm feeling ${selectedMood}`,
-        tags: selectedTags,
-      })
-    );
+    try {
+      // POST real a /api/checkins vía Axios (lib/api.ts), estado global en Redux
+      await dispatch(
+        submitMoodEntry({
+          userId: TEMP_USER_ID,
+          mood: selectedMood,
+          note: note || `I'm feeling ${selectedMood}`,
+          tags: selectedTags,
+        }),
+      ).unwrap();
 
-    // Show success message
-    setSubmitted(true);
+      // Refresca el historial en Redux con lo que quedó guardado en la BD
+      await dispatch(fetchMoodEntries(TEMP_USER_ID));
 
-    // Reset form after 1.5 seconds
-    setTimeout(() => {
-      setSelectedMood(null);
-      setSelectedTags([]);
-      setNote("");
-      setSubmitted(false);
-    }, 1500);
+      // Show success message
+      setSubmitted(true);
+
+      // Reset form after 1.5 seconds
+      setTimeout(() => {
+        setSelectedMood(null);
+        setSelectedTags([]);
+        setNote("");
+        setSubmitted(false);
+      }, 1500);
+    } catch (err) {
+      console.error(err);
+      alert("No se pudo guardar tu reflexión. Intenta de nuevo.");
+    }
   };
 
   if (submitted) {
@@ -174,9 +192,9 @@ export default function CheckInForm() {
           <button
             type="submit"
             className="px-8 py-3 bg-gray-900 text-white font-semibold rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50"
-            disabled={!selectedMood}
+            disabled={!selectedMood || (mounted && submitting)}
           >
-            Log Reflection
+            {submitting ? "Saving..." : "Log Reflection"}
           </button>
         </div>
       </form>

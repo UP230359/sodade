@@ -1,8 +1,9 @@
 "use client";
 
-import { useAppSelector } from "@/store";
-import { MoodEntry } from "@/store/moodSlice";
-import { useMemo } from "react";
+import { useAppDispatch, useAppSelector } from "@/store";
+import { MoodEntry, fetchMoodEntries } from "@/store/moodSlice";
+import { useEffect, useMemo } from "react";
+import { TEMP_USER_ID } from "@/lib/constants";
 
 const MOOD_COLORS: Record<MoodEntry["mood"], string> = {
   joy: "bg-yellow-100 text-yellow-700",
@@ -38,7 +39,14 @@ const MOOD_LABELS: Record<MoodEntry["mood"], string> = {
 };
 
 export default function MoodHistory() {
+  const dispatch = useAppDispatch();
   const entries = useAppSelector((state) => state.mood.entries);
+  const loading = useAppSelector((state) => state.mood.loading);
+  const error = useAppSelector((state) => state.mood.error);
+
+  useEffect(() => {
+    dispatch(fetchMoodEntries(TEMP_USER_ID));
+  }, [dispatch]);
 
   const sortedEntries = useMemo(() => {
     return [...entries].sort(
@@ -79,6 +87,26 @@ export default function MoodHistory() {
       hour12: true,
     });
   };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow p-8 text-center">
+        <h2 className="text-2xl font-serif text-gray-800 mb-4">History</h2>
+        <p className="text-gray-500">Loading your checkins...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow p-8 text-center">
+        <h2 className="text-2xl font-serif text-gray-800 mb-4">History</h2>
+        <p className="text-red-500">
+          Couldn&apos;t load your checkins. Please try again later.
+        </p>
+      </div>
+    );
+  }
 
   if (sortedEntries.length === 0) {
     return (

@@ -1,7 +1,7 @@
 "use client";
 
-import { useAppSelector } from "@/store";
-import { MoodEntry } from "@/store/moodSlice";
+import { useAppDispatch, useAppSelector } from "@/store";
+import { MoodEntry, fetchMoodEntries } from "@/store/moodSlice";
 import {
   LineChart,
   Line,
@@ -11,10 +11,11 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 import "jspdf/dist/jspdf.umd.min.js";
+import { TEMP_USER_ID } from "@/lib/constants";
 
 interface ChartDataPoint {
   timestamp: string;
@@ -102,8 +103,14 @@ const CustomDot = (props: CustomDotProps) => {
 };
 
 export default function MoodChart() {
+  const dispatch = useAppDispatch();
   const entries = useAppSelector((state) => state.mood.entries);
+  const loading = useAppSelector((state) => state.mood.loading);
   const chartRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dispatch(fetchMoodEntries(TEMP_USER_ID));
+  }, [dispatch]);
 
   const { chartData, latestEntry, stats } = useMemo(() => {
     const chartDataPoints: ChartDataPoint[] = entries.map((entry) => {
@@ -201,6 +208,22 @@ export default function MoodChart() {
 
       let currentY = 45 + imgHeight + 15;
 
+      // Alto de página A4 y margen inferior. Antes de dibujar cualquier
+      // bloque (título, header de tabla, o fila), se valida que quepa en
+      // lo que resta de la página; si no, se agrega una página nueva y
+      // currentY se reinicia arriba. Así ninguna fila se dibuja fuera de
+      // los límites del PDF (que antes simplemente se perdía sin avisar).
+      const PAGE_HEIGHT = 297;
+      const BOTTOM_MARGIN = 20;
+      const ensureSpace = (neededHeight: number) => {
+        if (currentY + neededHeight > PAGE_HEIGHT - BOTTOM_MARGIN) {
+          pdf.addPage();
+          currentY = 20;
+        }
+      };
+
+      ensureSpace(8 + 8 + 3 * 7);
+
       pdf.setFontSize(14);
       pdf.setTextColor(31, 41, 55);
       pdf.text("Summary Statistics", 20, currentY);
@@ -226,6 +249,7 @@ export default function MoodChart() {
       ];
 
       statsRows.forEach((row) => {
+        ensureSpace(7);
         pdf.rect(20, currentY, 170, 7);
         pdf.text(row[0], 25, currentY + 5);
         pdf.text(row[1], 155, currentY + 5);
@@ -233,6 +257,12 @@ export default function MoodChart() {
       });
 
       currentY += 5;
+
+      const distributionRows = Object.entries(stats.moodCounts).filter(
+        ([, count]) => count > 0,
+      );
+
+      ensureSpace(8 + 8 + Math.min(distributionRows.length, 3) * 7);
 
       pdf.setFontSize(14);
       pdf.setTextColor(31, 41, 55);
@@ -253,18 +283,21 @@ export default function MoodChart() {
       pdf.setTextColor(75, 85, 99);
       pdf.setFontSize(9);
 
-      Object.entries(stats.moodCounts).forEach(([mood, count]) => {
-        if (count > 0) {
-          const percentage = ((count / stats.totalEntries) * 100).toFixed(1);
-          pdf.rect(20, currentY, 170, 7);
-          pdf.text(MOOD_LABELS[mood as MoodEntry["mood"]], 25, currentY + 5);
-          pdf.text(count.toString(), 120, currentY + 5);
-          pdf.text(`${percentage}%`, 155, currentY + 5);
-          currentY += 7;
-        }
+      distributionRows.forEach(([mood, count]) => {
+        const percentage = ((count / stats.totalEntries) * 100).toFixed(1);
+        ensureSpace(7);
+        pdf.rect(20, currentY, 170, 7);
+        pdf.text(MOOD_LABELS[mood as MoodEntry["mood"]], 25, currentY + 5);
+        pdf.text(count.toString(), 120, currentY + 5);
+        pdf.text(`${percentage}%`, 155, currentY + 5);
+        currentY += 7;
       });
 
       currentY += 5;
+
+      const recentEntries = chartData.slice(-10).reverse();
+
+      ensureSpace(8 + 8 + Math.min(recentEntries.length, 3) * 7);
 
       pdf.setFontSize(14);
       pdf.setTextColor(31, 41, 55);
@@ -272,23 +305,38 @@ export default function MoodChart() {
 
       currentY += 8;
 
-      pdf.setFontSize(10);
-      pdf.setFillColor(243, 244, 246);
-      pdf.rect(20, currentY, 170, 8, "F");
-      pdf.setTextColor(55, 65, 81);
-      pdf.text("Date", 25, currentY + 6);
-      pdf.text("Time", 55, currentY + 6);
-      pdf.text("Emotion", 85, currentY + 6);
-      pdf.text("Note", 140, currentY + 6);
+      // Header de la tabla de "Recent Entries". Se define como función
+      // porque si la tabla salta de página, hay que volver a dibujar el
+      // header en la página nueva para que la continuación se entienda.
+      const drawRecentEntriesHeader = () => {
+        pdf.setFontSize(10);
+        pdf.setFillColor(243, 244, 246);
+        pdf.rect(20, currentY, 170, 8, "F");
+        pdf.setTextColor(55, 65, 81);
+        pdf.text("Date", 25, currentY + 6);
+        pdf.text("Time", 55, currentY + 6);
+        pdf.text("Emotion", 85, currentY + 6);
+        pdf.text("Note", 140, currentY + 6);
+        currentY += 8;
+      };
 
-      currentY += 8;
+      drawRecentEntriesHeader();
 
       pdf.setTextColor(75, 85, 99);
       pdf.setFontSize(8);
 
-      const recentEntries = chartData.slice(-10).reverse();
       recentEntries.forEach((entry) => {
         const notePreview = entry.note ? entry.note.substring(0, 20) : "-";
+
+        const neededForRow = 7;
+        if (currentY + neededForRow > PAGE_HEIGHT - BOTTOM_MARGIN) {
+          pdf.addPage();
+          currentY = 20;
+          drawRecentEntriesHeader();
+          pdf.setTextColor(75, 85, 99);
+          pdf.setFontSize(8);
+        }
+
         pdf.rect(20, currentY, 170, 7);
         pdf.text(entry.date, 25, currentY + 5);
         pdf.text(entry.time, 55, currentY + 5);
@@ -297,13 +345,20 @@ export default function MoodChart() {
         currentY += 7;
       });
 
-      pdf.setFontSize(8);
-      pdf.setTextColor(156, 163, 175);
-      pdf.text(
-        `Report generated by Sodade - Emotion Tracking Platform | Page 1`,
-        20,
-        280
-      );
+      // El footer va justo debajo del contenido, no en una posición fija.
+      // Se agrega en CADA página del documento (no solo la última), para
+      // que se vea consistente sin importar cuántas páginas resulten.
+      const totalPages = pdf.getNumberOfPages();
+      for (let page = 1; page <= totalPages; page++) {
+        pdf.setPage(page);
+        pdf.setFontSize(8);
+        pdf.setTextColor(156, 163, 175);
+        pdf.text(
+          `Report generated by Sodade - Emotion Tracking Platform | Page ${page} of ${totalPages}`,
+          20,
+          PAGE_HEIGHT - 12,
+        );
+      }
 
       pdf.save(
         `emotion-report-${new Date().toISOString().split("T")[0]}.pdf`
@@ -337,7 +392,11 @@ export default function MoodChart() {
       </div>
 
       <div ref={chartRef} className="bg-white p-4 rounded-lg">
-        {chartData.length === 0 ? (
+        {loading ? (
+          <div className="h-80 flex items-center justify-center text-gray-500">
+            <p>Loading your emotion data...</p>
+          </div>
+        ) : chartData.length === 0 ? (
           <div className="h-80 flex items-center justify-center text-gray-500">
             <p>No mood data yet. Start logging to see your trends.</p>
           </div>

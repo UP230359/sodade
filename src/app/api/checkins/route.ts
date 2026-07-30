@@ -13,10 +13,14 @@ export async function GET(request: NextRequest) {
   try {
     const [rows] = await db.query(
       `SELECT c.checkin_id, c.note, c.shared_anonymously, c.created_at,
-              e.name AS emotion
+              e.name AS emotion,
+              GROUP_CONCAT(i.name ORDER BY i.name SEPARATOR ',') AS tags
        FROM checkins c
        JOIN emotions e ON c.emotion_id = e.emotion_id
+       LEFT JOIN checkin_influences ci ON ci.checkin_id = c.checkin_id
+       LEFT JOIN influences i ON i.influence_id = ci.influence_id
        WHERE c.user_id = ?
+       GROUP BY c.checkin_id, c.note, c.shared_anonymously, c.created_at, e.name
        ORDER BY c.created_at DESC`,
       [userId],
     );
