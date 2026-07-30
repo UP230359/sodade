@@ -15,7 +15,7 @@
   --color-anxiety: var(--anxiety-color);
   --color-neutral: var(--neutral-color);
 
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
 }
 
 @layer base {
