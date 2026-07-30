@@ -11,6 +11,7 @@ export interface Checkin {
   note: string | null;
   shared_anonymously: boolean;
   created_at: string;
+  tags: string | null;
 }
 
 export interface NewCheckin {
