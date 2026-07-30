@@ -8,17 +8,21 @@ import { TEMP_USER_ID } from "@/lib/constants";
 
 type MoodType = MoodEntry["mood"];
 
-const MOODS: { label: string; value: MoodType; icon: string }[] = [
-  { label: "Joy", value: "joy", icon: "😊" },
-  { label: "Calm", value: "calm", icon: "😌" },
-  { label: "Sadness", value: "sadness", icon: "😢" },
-  { label: "Anger", value: "anger", icon: "😠" },
-  { label: "Fear", value: "fear", icon: "😨" },
-  { label: "Disgust", value: "disgust", icon: "🤢" },
-  { label: "Surprise", value: "surprise", icon: "😲" },
-  { label: "Trust", value: "trust", icon: "🤝" },
+//Lista de las emociones que se pueden elegir en el formulario
+//cada una tiene su nombre y su valor
+const MOODS: { label: string; value: MoodType }[] = [
+  { label: "Joy", value: "joy" },
+  { label: "Calm", value: "calm" },
+  { label: "Sadness", value: "sadness" },
+  { label: "Anger", value: "anger" },
+  { label: "Fear", value: "fear" },
+  { label: "Disgust", value: "disgust" },
+  { label: "Surprise", value: "surprise" },
+  { label: "Trust", value: "trust" },
 ];
 
+//Lista de los tags que puede elegir el usuario para decir que
+//influyo en como se siente, cada uno tiene su color (variant)
 const INFLUENCE_TAGS: { label: string; variant: "primary" | "secondary" | "joy" | "calm" | "sadness" | "anger" | "anxiety" | "neutral" }[] = [
   { label: "Work", variant: "primary" },
   { label: "Family", variant: "calm" },
@@ -30,44 +34,47 @@ const INFLUENCE_TAGS: { label: string; variant: "primary" | "secondary" | "joy" 
 ];
 
 export default function CheckInForm() {
+  //Traigo el dispatch para poder llamar las funciones de redux
   const dispatch = useAppDispatch();
+  //Traigo el estado de submitting para saber si se esta guardando algo
   const submitting = useAppSelector((state) => state.mood.submitting);
 
-  // Evita un hydration mismatch en el botón: en el primer render (servidor
-  // y cliente antes de montar) "submitting" del store de Redux aún no está
-  // garantizado a coincidir entre ambos, así que hasta que el componente
-  // esté montado en el cliente, ignoramos su valor.
+  //Esto es para evitar un error de hydration en el boton
+  //en el primer render el estado de redux no siempre coincide entre
+  //servidor y cliente, entonces mientras no este montado lo ignoro
   const [mounted, setMounted] = useState(false);
-  // Patrón estándar de Next.js para evitar hydration mismatch (ver
-  // https://nextjs.org/docs/messages/react-hydration-error). El setState
-  // es intencional y solo corre una vez al montar.
+  //Aqui pongo mounted en true una sola vez cuando ya cargo el componente
+  //esto ya lo revise y es normal que el linter marque advertencia aqui
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
-  // Local state
+  //Estados locales del formulario
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [note, setNote] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  // Toggle tag
+  //Esta funcion agrega o quita un tag cuando le dan click
+  //si ya estaba seleccionado lo quita, si no estaba lo agrega
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
   };
 
-  // Handle submit
+  //Esta funcion se ejecuta cuando se manda el formulario
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    //Si no eligio ninguna emocion no dejo que mande el formulario
     if (!selectedMood) {
       alert("Please select an emotion");
       return;
     }
 
     try {
-      // POST real a /api/checkins vía Axios (lib/api.ts), estado global en Redux
+      //Aqui se manda la peticion a la api usando axios
+      //y se guarda el resultado en redux
       await dispatch(
         submitMoodEntry({
           userId: TEMP_USER_ID,
@@ -77,13 +84,13 @@ export default function CheckInForm() {
         }),
       ).unwrap();
 
-      // Refresca el historial en Redux con lo que quedó guardado en la BD
+      //Se vuelve a pedir la lista para que el historial quede actualizado
       await dispatch(fetchMoodEntries(TEMP_USER_ID));
 
-      // Show success message
+      //Se muestra el mensaje de que ya se guardo
       setSubmitted(true);
 
-      // Reset form after 1.5 seconds
+      //Se limpia el formulario despues de un rato
       setTimeout(() => {
         setSelectedMood(null);
         setSelectedTags([]);
@@ -91,15 +98,16 @@ export default function CheckInForm() {
         setSubmitted(false);
       }, 1500);
     } catch (err) {
+      //Si algo sale mal se muestra una alerta simple
       console.error(err);
       alert("No se pudo guardar tu reflexión. Intenta de nuevo.");
     }
   };
 
+  //Si ya se guardo el checkin se muestra este mensaje en vez del formulario
   if (submitted) {
     return (
       <div className="bg-white rounded-2xl shadow-lg p-12 max-w-2xl mx-auto text-center">
-        <p className="text-4xl mb-4">✨</p>
         <h2 className="text-2xl font-serif text-gray-900 mb-2">
           Emotion logged!
         </h2>
@@ -113,7 +121,7 @@ export default function CheckInForm() {
   return (
     <div className="bg-white rounded-2xl shadow-lg p-8 max-w-2xl mx-auto">
       <form onSubmit={handleSubmit}>
-        {/* Header */}
+        {/* Aqui va el titulo del formulario */}
         <div className="text-center mb-8">
           <p className="text-xs font-semibold text-orange-600 tracking-wide uppercase mb-2">
             Daily Check-in
@@ -123,7 +131,8 @@ export default function CheckInForm() {
           </h2>
         </div>
 
-        {/* 1. Select Emotion (MoodSelector) */}
+        {/* Aqui se pintan los botones de las emociones */}
+        {/* al darle click a uno se guarda en selectedMood */}
         <div className="mb-8">
           <p className="text-sm font-semibold text-gray-900 mb-4">
             Select your primary emotion
@@ -140,14 +149,14 @@ export default function CheckInForm() {
                     : "bg-gray-100 border-gray-200 text-gray-700 hover:border-gray-300"
                 }`}
               >
-                <span className="mr-2">{mood.icon}</span>
                 {mood.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* 2. Select Tags (usando Badge component) */}
+        {/* Aqui se pintan los tags opcionales usando el componente Badge */}
+        {/* si el tag ya esta seleccionado se le pone un anillo alrededor */}
         <div className="mb-8">
           <p className="text-sm font-semibold text-gray-900 mb-4">
             What is influencing this? (Optional)
@@ -177,7 +186,7 @@ export default function CheckInForm() {
           </div>
         </div>
 
-        {/* 3. Note */}
+        {/* Aqui va el cuadro de texto para escribir la nota opcional */}
         <div className="mb-8">
           <p className="text-sm font-semibold text-gray-900 mb-4">
             Add a brief note (Optional)
@@ -191,7 +200,8 @@ export default function CheckInForm() {
           />
         </div>
 
-        {/* Submit Button */}
+        {/* Boton para mandar el formulario */}
+        {/* se desactiva si no hay emocion elegida o si se esta guardando */}
         <div className="flex justify-center">
           <button
             type="submit"
@@ -203,7 +213,8 @@ export default function CheckInForm() {
         </div>
       </form>
 
-      {/* Selected Summary */}
+      {/* Este cuadro solo se muestra si ya se eligio una emocion */}
+      {/* sirve para que el usuario vea un resumen antes de mandar */}
       {selectedMood && (
         <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
           <p className="text-sm text-gray-700">

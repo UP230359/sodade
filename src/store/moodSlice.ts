@@ -6,6 +6,8 @@ import {
   NewCheckin,
 } from "@/lib/api";
 
+//Esta es la forma que tiene cada emocion guardada
+//aqui defino los datos que necesita cada checkin
 export interface MoodEntry {
   id: string;
   mood: "joy" | "calm" | "sadness" | "anger" | "fear" | "disgust" | "surprise" | "trust";
@@ -17,6 +19,8 @@ export interface MoodEntry {
 
 type MoodType = MoodEntry["mood"];
 
+//Este es el estado que va a manejar redux
+//tiene los checkins, si esta cargando y si hubo error
 interface MoodState {
   entries: MoodEntry[];
   loading: boolean;
@@ -25,6 +29,8 @@ interface MoodState {
   submitError: string | null;
 }
 
+//Aqui le doy un numero del 1 al 5 a cada emocion
+//esto es solo para mostrarlo en la grafica y el historial
 const MOOD_LEVELS: Record<MoodType, number> = {
   joy: 5,
   calm: 4,
@@ -36,9 +42,9 @@ const MOOD_LEVELS: Record<MoodType, number> = {
   trust: 4,
 };
 
-// La BD guarda los nombres capitalizados (tabla `emotions`: "Joy", "Calm"...)
-// mientras que el frontend maneja el MoodType en minúsculas. Este mapeo evita
-// depender del collation de MySQL para que el match sea exacto siempre.
+//En la base de datos las emociones estan con mayuscula (Joy, Calm)
+//pero aqui en el frontend las uso en minuscula, por eso hago este cambio
+//asi me aseguro que siempre haga match bien sin importar la base de datos
 const EMOTION_DB_NAMES: Record<MoodType, string> = {
   joy: "Joy",
   calm: "Calm",
@@ -50,6 +56,8 @@ const EMOTION_DB_NAMES: Record<MoodType, string> = {
   trust: "Trust",
 };
 
+//Esta funcion agarra lo que regresa la api y lo convierte
+//al formato que ya usan los componentes (MoodHistory, MoodChart)
 const mapApiCheckinToMoodEntry = (checkin: ApiCheckin): MoodEntry => {
   const mood = checkin.emotion.toLowerCase() as MoodType;
   return {
@@ -62,8 +70,8 @@ const mapApiCheckinToMoodEntry = (checkin: ApiCheckin): MoodEntry => {
   };
 };
 
-// Trae los checkins reales del usuario desde la API (Axios) y los normaliza
-// al shape de MoodEntry que ya usa toda la UI (MoodHistory, MoodChart...).
+//Esta funcion trae los checkins del usuario usando axios
+//y los deja listos para usarse en la interfaz
 export const fetchMoodEntries = createAsyncThunk(
   "mood/fetchMoodEntries",
   async (userId: number) => {
@@ -72,9 +80,9 @@ export const fetchMoodEntries = createAsyncThunk(
   },
 );
 
-// Crea un checkin en la BD real vía Axios. No actualiza el estado local a
-// mano: al resolver, el componente vuelve a hacer fetchMoodEntries para
-// mantener Redux como espejo fiel de la BD.
+//Esta funcion guarda un checkin nuevo en la base de datos
+//no actualiza el estado a mano, despues se vuelve a pedir la lista completa
+//asi me aseguro que redux siempre tenga lo mismo que la base de datos
 export const submitMoodEntry = createAsyncThunk(
   "mood/submitMoodEntry",
   async (payload: {
@@ -94,6 +102,7 @@ export const submitMoodEntry = createAsyncThunk(
   },
 );
 
+//Este es el estado inicial, antes de que se pida nada
 const initialState: MoodState = {
   entries: [],
   loading: false,
@@ -102,6 +111,8 @@ const initialState: MoodState = {
   submitError: null,
 };
 
+//Aqui se crea el slice de redux con su nombre, estado inicial
+//y los cambios que puede tener ese estado
 const moodSlice = createSlice({
   name: "mood",
   initialState,
@@ -110,6 +121,9 @@ const moodSlice = createSlice({
       state.entries = action.payload;
     },
   },
+  //Aqui manejo lo que pasa en cada momento de las funciones de arriba
+  //pending es cuando empieza, fulfilled cuando termina bien
+  //y rejected cuando algo sale mal
   extraReducers: (builder) => {
     builder
       .addCase(fetchMoodEntries.pending, (state) => {
@@ -138,5 +152,6 @@ const moodSlice = createSlice({
   },
 });
 
+//Exporto la accion para poder usarla si hace falta en otro lado
 export const { setMoodEntries } = moodSlice.actions;
 export default moodSlice.reducer;

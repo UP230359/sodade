@@ -1,118 +1,54 @@
 "use client";
 
+//Importamos los hooks de Redux para acceder y modificar el estado
+//nos permite guardar y obtener datos de las emociones
+
 import { useAppDispatch, useAppSelector } from "@/store";
 import { MoodEntry, fetchMoodEntries } from "@/store/moodSlice";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import { useEffect, useMemo, useRef } from "react";
-import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
-import "jspdf/dist/jspdf.umd.min.js";
 import { TEMP_USER_ID } from "@/lib/constants";
+import { generateEmotionReportPdf } from "@/lib/generateEmotionReportPdf";
 
-interface ChartDataPoint {
-  timestamp: string;
-  level: number;
-  mood: MoodEntry["mood"];
-  note?: string;
-  date: string;
-  time: string;
-}
+//Traemos la gráfica y todo lo relacionado a colores/emojis desde su
+//propio archivo, así este componente no se llena de código de la gráfica
 
-interface CustomTooltipProps {
-  active?: boolean;
-  payload?: Array<{ payload: ChartDataPoint }>;
-}
+import EmotionLineChart, {
+  ChartDataPoint,
+  MOOD_COLORS,
+  MOOD_LABELS,
+} from "@/components/mood/EmotionLineChart";
 
-interface CustomDotProps {
-  cx?: number;
-  cy?: number;
-  payload?: ChartDataPoint;
-}
-
-const MOOD_COLORS: Record<MoodEntry["mood"], string> = {
-  joy: "#FBBF24",
-  calm: "#22C55E",
-  sadness: "#3B82F6",
-  anger: "#EF4444",
-  fear: "#A855F7",
-  disgust: "#10B981",
-  surprise: "#F97316",
-  trust: "#6366F1",
-};
-
-const MOOD_ICONS: Record<MoodEntry["mood"], string> = {
-  joy: "😊",
-  calm: "😌",
-  sadness: "😢",
-  anger: "😠",
-  fear: "😨",
-  disgust: "🤢",
-  surprise: "😲",
-  trust: "🤝",
-};
-
-const MOOD_LABELS: Record<MoodEntry["mood"], string> = {
-  joy: "Joy",
-  calm: "Calm",
-  sadness: "Sadness",
-  anger: "Anger",
-  fear: "Fear",
-  disgust: "Disgust",
-  surprise: "Surprise",
-  trust: "Trust",
-};
-
-const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    return (
-      <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-        <p className="font-semibold text-gray-900">{data.date}</p>
-        <p className="text-sm font-medium text-gray-700">{data.time}</p>
-        <p className="text-sm text-gray-600">{MOOD_LABELS[data.mood]}</p>
-        {data.note && <p className="text-xs text-gray-500 mt-1">&quot;{data.note}&quot;</p>}
-      </div>
-    );
-  }
-  return null;
-};
-
-const CustomDot = (props: CustomDotProps) => {
-  const { cx, cy, payload } = props;
-  if (cx === undefined || cy === undefined || !payload) return null;
-
-  const color = MOOD_COLORS[payload.mood];
-  return (
-    <circle
-      cx={cx}
-      cy={cy}
-      r={8}
-      fill={color}
-      stroke="white"
-      strokeWidth={2}
-    />
-  );
-};
+//Componente principal que muestra el gráfico de emociones
+//aquí se junta todo: gráfico, tabla, PDF y estadísticas
 
 export default function MoodChart() {
+  //Traemos dispatch para enviar acciones a Redux
+  //entries tiene todas las emociones guardadas
+
   const dispatch = useAppDispatch();
   const entries = useAppSelector((state) => state.mood.entries);
   const loading = useAppSelector((state) => state.mood.loading);
+
+  //chartRef es para acceder al elemento HTML del gráfico
+  //lo usamos para convertir el gráfico a imagen cuando generamos el PDF
+
   const chartRef = useRef<HTMLDivElement>(null);
+
+  //Cuando el componente carga, pedimos que traiga todas las emociones
+  //TEMP_USER_ID es un ID temporal del usuario mientras no haya login real
 
   useEffect(() => {
     dispatch(fetchMoodEntries(TEMP_USER_ID));
   }, [dispatch]);
 
+  //useMemo calcula los datos del gráfico solo cuando cambian los entries
+  //así no recalculamos todo cada vez que se renderiza el componente
+
   const { chartData, latestEntry, stats } = useMemo(() => {
+    //Convertimos cada entrada en un punto del gráfico
+    //date es la fecha formateada y time es la hora formateada
+
     const chartDataPoints: ChartDataPoint[] = entries.map((entry) => {
       const date = new Date(entry.timestamp);
       return {
@@ -125,9 +61,15 @@ export default function MoodChart() {
       };
     });
 
+    //Ordenamos los puntos por fecha para que el gráfico tenga sentido
+    //de lo más viejo a lo más nuevo
+
     chartDataPoints.sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
+
+    //Contamos cuántas veces aparece cada emoción
+    //lo usamos para mostrar estadísticas y encontrar la más común
 
     const moodCounts: Record<MoodEntry["mood"], number> = {
       joy: 0,
@@ -144,10 +86,19 @@ export default function MoodChart() {
       moodCounts[entry.mood]++;
     });
 
+    //Encontramos la emoción que más aparece
+    //primero ordenamos por cantidad y sacamos la primera
+
     const mostCommonMood =
       Object.entries(moodCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || "calm";
 
+    //Sacamos la última entrada (la más reciente)
+    //la mostramos en un card especial arriba de la tabla
+
     const latest = entries.length > 0 ? chartDataPoints[chartDataPoints.length - 1] : null;
+
+    //Devolvemos todos los datos que necesita el componente
+    //chartData para el gráfico, latestEntry para el card, stats para las estadísticas
 
     return {
       chartData: chartDataPoints,
@@ -166,284 +117,101 @@ export default function MoodChart() {
     };
   }, [entries]);
 
+  //Función que arma el PDF del reporte
+  //primero convierte la gráfica a imagen y luego llama al generador del PDF
+
   const downloadPDF = async () => {
+    //Verificamos que exista el elemento del gráfico
+    //si no existe, no hacemos nada
+
     if (!chartRef.current) return;
 
     try {
+      //Convertimos el elemento HTML del gráfico a una imagen
+      //scale: 2 hace la imagen más clara
+
       const canvas = await html2canvas(chartRef.current, {
         backgroundColor: "#FFFFFF",
         scale: 2,
       });
 
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
+      //Le mandamos la imagen y los datos ya calculados al generador de PDF
+      //toda la lógica de dibujar el PDF vive en generateEmotionReportPdf.ts
 
-      pdf.setFontSize(24);
-      pdf.setTextColor(31, 41, 55);
-      pdf.text("Emotion Timeline Report", 20, 25);
-
-      pdf.setFontSize(10);
-      pdf.setTextColor(107, 114, 128);
-      pdf.text(
-        `Generated on ${new Date().toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}`,
-        20,
-        32
-      );
-
-      pdf.setDrawColor(229, 231, 235);
-      pdf.line(20, 35, 190, 35);
-
-      const imgWidth = 170;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 20, 40, imgWidth, imgHeight);
-
-      let currentY = 45 + imgHeight + 15;
-
-      // Alto de página A4 y margen inferior. Antes de dibujar cualquier
-      // bloque (título, header de tabla, o fila), se valida que quepa en
-      // lo que resta de la página; si no, se agrega una página nueva y
-      // currentY se reinicia arriba. Así ninguna fila se dibuja fuera de
-      // los límites del PDF (que antes simplemente se perdía sin avisar).
-      const PAGE_HEIGHT = 297;
-      const BOTTOM_MARGIN = 20;
-      const ensureSpace = (neededHeight: number) => {
-        if (currentY + neededHeight > PAGE_HEIGHT - BOTTOM_MARGIN) {
-          pdf.addPage();
-          currentY = 20;
-        }
-      };
-
-      ensureSpace(8 + 8 + 3 * 7);
-
-      pdf.setFontSize(14);
-      pdf.setTextColor(31, 41, 55);
-      pdf.text("Summary Statistics", 20, currentY);
-
-      currentY += 8;
-
-      pdf.setFontSize(10);
-      pdf.setFillColor(243, 244, 246);
-      pdf.rect(20, currentY, 170, 8, "F");
-      pdf.setTextColor(55, 65, 81);
-      pdf.text("Metric", 25, currentY + 6);
-      pdf.text("Value", 155, currentY + 6);
-
-      currentY += 8;
-
-      pdf.setTextColor(75, 85, 99);
-      pdf.setFontSize(9);
-
-      const statsRows = [
-        ["Total Emotions Logged", `${stats.totalEntries}`],
-        ["Most Common Emotion", `${MOOD_LABELS[stats.mostCommonMood as MoodEntry["mood"]]}`],
-        ["Entries This Week", `${stats.lastWeekEntries}`],
-      ];
-
-      statsRows.forEach((row) => {
-        ensureSpace(7);
-        pdf.rect(20, currentY, 170, 7);
-        pdf.text(row[0], 25, currentY + 5);
-        pdf.text(row[1], 155, currentY + 5);
-        currentY += 7;
-      });
-
-      currentY += 5;
-
-      const distributionRows = Object.entries(stats.moodCounts).filter(
-        ([, count]) => count > 0,
-      );
-
-      ensureSpace(8 + 8 + Math.min(distributionRows.length, 3) * 7);
-
-      pdf.setFontSize(14);
-      pdf.setTextColor(31, 41, 55);
-      pdf.text("Emotion Distribution", 20, currentY);
-
-      currentY += 8;
-
-      pdf.setFontSize(10);
-      pdf.setFillColor(243, 244, 246);
-      pdf.rect(20, currentY, 170, 8, "F");
-      pdf.setTextColor(55, 65, 81);
-      pdf.text("Emotion", 25, currentY + 6);
-      pdf.text("Count", 120, currentY + 6);
-      pdf.text("Percentage", 155, currentY + 6);
-
-      currentY += 8;
-
-      pdf.setTextColor(75, 85, 99);
-      pdf.setFontSize(9);
-
-      distributionRows.forEach(([mood, count]) => {
-        const percentage = ((count / stats.totalEntries) * 100).toFixed(1);
-        ensureSpace(7);
-        pdf.rect(20, currentY, 170, 7);
-        pdf.text(MOOD_LABELS[mood as MoodEntry["mood"]], 25, currentY + 5);
-        pdf.text(count.toString(), 120, currentY + 5);
-        pdf.text(`${percentage}%`, 155, currentY + 5);
-        currentY += 7;
-      });
-
-      currentY += 5;
-
-      const recentEntries = chartData.slice(-10).reverse();
-
-      ensureSpace(8 + 8 + Math.min(recentEntries.length, 3) * 7);
-
-      pdf.setFontSize(14);
-      pdf.setTextColor(31, 41, 55);
-      pdf.text("Recent Entries", 20, currentY);
-
-      currentY += 8;
-
-      // Header de la tabla de "Recent Entries". Se define como función
-      // porque si la tabla salta de página, hay que volver a dibujar el
-      // header en la página nueva para que la continuación se entienda.
-      const drawRecentEntriesHeader = () => {
-        pdf.setFontSize(10);
-        pdf.setFillColor(243, 244, 246);
-        pdf.rect(20, currentY, 170, 8, "F");
-        pdf.setTextColor(55, 65, 81);
-        pdf.text("Date", 25, currentY + 6);
-        pdf.text("Time", 55, currentY + 6);
-        pdf.text("Emotion", 85, currentY + 6);
-        pdf.text("Note", 140, currentY + 6);
-        currentY += 8;
-      };
-
-      drawRecentEntriesHeader();
-
-      pdf.setTextColor(75, 85, 99);
-      pdf.setFontSize(8);
-
-      recentEntries.forEach((entry) => {
-        const notePreview = entry.note ? entry.note.substring(0, 20) : "-";
-
-        const neededForRow = 7;
-        if (currentY + neededForRow > PAGE_HEIGHT - BOTTOM_MARGIN) {
-          pdf.addPage();
-          currentY = 20;
-          drawRecentEntriesHeader();
-          pdf.setTextColor(75, 85, 99);
-          pdf.setFontSize(8);
-        }
-
-        pdf.rect(20, currentY, 170, 7);
-        pdf.text(entry.date, 25, currentY + 5);
-        pdf.text(entry.time, 55, currentY + 5);
-        pdf.text(MOOD_LABELS[entry.mood], 85, currentY + 5);
-        pdf.text(notePreview, 140, currentY + 5);
-        currentY += 7;
-      });
-
-      // El footer va justo debajo del contenido, no en una posición fija.
-      // Se agrega en CADA página del documento (no solo la última), para
-      // que se vea consistente sin importar cuántas páginas resulten.
-      const totalPages = pdf.getNumberOfPages();
-      for (let page = 1; page <= totalPages; page++) {
-        pdf.setPage(page);
-        pdf.setFontSize(8);
-        pdf.setTextColor(156, 163, 175);
-        pdf.text(
-          `Report generated by Sodade - Emotion Tracking Platform | Page ${page} of ${totalPages}`,
-          20,
-          PAGE_HEIGHT - 12,
-        );
-      }
-
-      pdf.save(
-        `emotion-report-${new Date().toISOString().split("T")[0]}.pdf`
+      await generateEmotionReportPdf(
+        canvas.toDataURL("image/png"),
+        canvas.width,
+        canvas.height,
+        chartData,
+        stats,
       );
     } catch (error) {
+      //Si hay algún error al generar el PDF, lo mostramos en la consola
+      //así sabemos qué salió mal
+
       console.error("Error generating PDF:", error);
     }
   };
 
+  //Retornamos el HTML del componente
+  //es el contenedor principal con el gráfico, tabla y botón de descargar
+
   return (
     <div className="bg-gradient-to-b from-orange-50 to-white rounded-2xl shadow-lg p-8">
+      {/* Encabezado con título y botón de descargar PDF */}
       <div className="mb-6 flex items-center justify-between">
         <div>
+          {/* Título principal del componente */}
           <h2 className="text-2xl font-serif font-bold text-gray-900 mb-1">
             Emotion Timeline
           </h2>
+          {/* Descripción corta de qué hace este componente */}
           <p className="text-sm text-gray-600">
             Your complete emotion journey with timestamps
           </p>
         </div>
 
+        {/* Botón para descargar el PDF, solo se muestra si hay entradas */}
         {entries.length > 0 && (
           <button
             onClick={downloadPDF}
             className="px-4 py-2 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2"
           >
-            <span>📄</span>
             Download PDF
           </button>
         )}
       </div>
 
+      {/* Contenedor del gráfico (el ref para convertir a PDF) */}
       <div ref={chartRef} className="bg-white p-4 rounded-lg">
+        {/* Si está cargando, mostramos un mensaje de carga */}
         {loading ? (
           <div className="h-80 flex items-center justify-center text-gray-500">
             <p>Loading your emotion data...</p>
           </div>
         ) : chartData.length === 0 ? (
+          /* Si no hay datos, mostramos un mensaje para que empiece a registrar */
           <div className="h-80 flex items-center justify-center text-gray-500">
             <p>No mood data yet. Start logging to see your trends.</p>
           </div>
         ) : (
+          /* Si hay datos, mostramos el gráfico */
           <div className="mb-8">
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart
-                data={chartData}
-                margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="0"
-                  stroke="#F3E8FF"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="time"
-                  stroke="#9CA3AF"
-                  style={{ fontSize: "12px", fontWeight: "500" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis hide={true} domain={[1, 5]} />
-                <Tooltip content={<CustomTooltip />} />
-                <Line
-                  type="monotone"
-                  dataKey="level"
-                  stroke="#F97316"
-                  strokeWidth={2}
-                  dot={<CustomDot />}
-                  isAnimationActive={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <EmotionLineChart data={chartData} />
           </div>
         )}
       </div>
 
+      {/* Card que muestra la última emoción registrada */}
       {latestEntry && (
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 flex items-start gap-4 mt-6">
+          {/* Círculo de color que identifica la emoción */}
           <div
-            className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg flex-shrink-0"
+            className="w-12 h-12 rounded-full flex-shrink-0"
             style={{ backgroundColor: MOOD_COLORS[latestEntry.mood] }}
-          >
-            {MOOD_ICONS[latestEntry.mood]}
-          </div>
+          />
           <div className="flex-1">
+            {/* Nombre de la emoción, hora y fecha */}
             <div className="flex items-center gap-2 mb-1">
               <p className="font-semibold text-gray-900">
                 {MOOD_LABELS[latestEntry.mood]} - {latestEntry.time}
@@ -452,6 +220,7 @@ export default function MoodChart() {
                 {latestEntry.date}
               </span>
             </div>
+            {/* Si hay nota, la mostramos */}
             {latestEntry.note && (
               <p className="text-sm text-gray-600">&quot;{latestEntry.note}&quot;</p>
             )}
@@ -459,12 +228,16 @@ export default function MoodChart() {
         </div>
       )}
 
+      {/* Tabla con todas las emociones registradas */}
       {chartData.length > 0 && (
         <div className="mt-8">
+          {/* Título de la tabla con el número total de entradas */}
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             All Entries ({chartData.length})
           </h3>
+          {/* Contenedor con scroll horizontal por si la tabla es muy ancha */}
           <div className="overflow-x-auto">
+            {/* Tabla con las columnas: fecha, hora, emoción y nota */}
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200">
@@ -475,16 +248,24 @@ export default function MoodChart() {
                 </tr>
               </thead>
               <tbody>
+                {/* Invertimos los datos para mostrar lo más reciente primero */}
                 {chartData.slice().reverse().map((entry, idx) => (
                   <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
+                    {/* Fecha de la entrada */}
                     <td className="py-2 px-3 text-gray-700">{entry.date}</td>
+                    {/* Hora de la entrada */}
                     <td className="py-2 px-3 text-gray-700 font-medium">{entry.time}</td>
+                    {/* Emoción */}
                     <td className="py-2 px-3">
                       <span className="flex items-center gap-2">
-                        {MOOD_ICONS[entry.mood]}
+                        <span
+                          className="w-3 h-3 rounded-full inline-block"
+                          style={{ backgroundColor: MOOD_COLORS[entry.mood] }}
+                        />
                         {MOOD_LABELS[entry.mood]}
                       </span>
                     </td>
+                    {/* Nota (si no hay nota, mostramos un guión "-") */}
                     <td className="py-2 px-3 text-gray-600 truncate">
                       {entry.note || "-"}
                     </td>
