@@ -1,25 +1,11 @@
 "use client";
 
 import { useAppDispatch, useAppSelector } from "@/store";
-import { submitMoodEntry, fetchMoodEntries, MoodEntry } from "@/store/moodSlice";
+import { submitMoodEntry, fetchMoodEntries } from "@/store/moodSlice";
 import { useState, useEffect } from "react";
 import Badge from "@/components/ui/Badge";
 import { TEMP_USER_ID } from "@/lib/constants";
-
-type MoodType = MoodEntry["mood"];
-
-//Lista de las emociones que se pueden elegir en el formulario
-//cada una tiene su nombre y su valor
-const MOODS: { label: string; value: MoodType }[] = [
-  { label: "Joy", value: "joy" },
-  { label: "Calm", value: "calm" },
-  { label: "Sadness", value: "sadness" },
-  { label: "Anger", value: "anger" },
-  { label: "Fear", value: "fear" },
-  { label: "Disgust", value: "disgust" },
-  { label: "Surprise", value: "surprise" },
-  { label: "Trust", value: "trust" },
-];
+import MoodSelector, { MoodType } from "@/components/mood/MoodSelector";
 
 //Lista de los tags que puede elegir el usuario para decir que
 //influyo en como se siente, cada uno tiene su color (variant)
@@ -131,28 +117,13 @@ export default function CheckInForm() {
           </h2>
         </div>
 
-        {/* Aqui se pintan los botones de las emociones */}
-        {/* al darle click a uno se guarda en selectedMood */}
+        {/* Aqui uso el componente MoodSelector para elegir la emocion */}
+        {/* le paso la emocion actual y la funcion para cambiarla */}
         <div className="mb-8">
           <p className="text-sm font-semibold text-gray-900 mb-4">
             Select your primary emotion
           </p>
-          <div className="flex flex-wrap gap-3">
-            {MOODS.map((mood) => (
-              <button
-                key={mood.value}
-                type="button"
-                onClick={() => setSelectedMood(mood.value)}
-                className={`px-4 py-2 rounded-full font-medium transition-all border-2 ${
-                  selectedMood === mood.value
-                    ? "bg-yellow-200 border-yellow-400 text-gray-900 scale-105"
-                    : "bg-gray-100 border-gray-200 text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                {mood.label}
-              </button>
-            ))}
-          </div>
+          <MoodSelector selected={selectedMood} onSelect={setSelectedMood} />
         </div>
 
         {/* Aqui se pintan los tags opcionales usando el componente Badge */}
