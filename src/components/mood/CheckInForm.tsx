@@ -38,6 +38,9 @@ export default function CheckInForm() {
   // garantizado a coincidir entre ambos, así que hasta que el componente
   // esté montado en el cliente, ignoramos su valor.
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line -- patrón estándar de Next.js para evitar
+  // hydration mismatch (ver https://nextjs.org/docs/messages/react-hydration-error).
+  // El setState es intencional y solo corre una vez al montar.
   useEffect(() => setMounted(true), []);
 
   // Local state
