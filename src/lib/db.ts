@@ -1,13 +1,15 @@
 import mysql from "mysql2/promise";
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || "localhost",
-  port: Number(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER || "sodade_app",
-  password: process.env.DB_PASSWORD || "changeme",
+// Initialize a connection pool to MySQL
+export const db = mysql.createPool({
+  host: process.env.DB_HOST || "127.0.0.1",
+  port: parseInt(process.env.DB_PORT || "3306"),
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
   database: process.env.DB_NAME || "sodade",
   waitForConnections: true,
   connectionLimit: 10,
+  queueLimit: 0,
 });
 
-export default pool;
+export default db;

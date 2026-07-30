@@ -17,35 +17,22 @@ export interface User {
   cedula?: string;
 }
 
-/**
- * Simulates registering a user in a database.
- * Ready for future SQL database integration (e.g. PostgreSQL, MySQL, SQLite, etc.)
- */
 export async function registerUserInDB(data: RegisterInput): Promise<User> {
-  // Simulate network/database latency
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  const res = await fetch("/api/register", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
 
-  // Placeholder indicating the SQL query that will run here:
-  /*
-  SQL Query representation:
-  
-  INSERT INTO users (first_name, last_name, email, password_hash, account_type, is_onboarded, cedula)
-  VALUES ($1, $2, $3, $4, $5, $6, $7)
-  RETURNING id, first_name, last_name, email, account_type, is_onboarded, cedula;
-  */
-  
-  console.log("SQL Database query simulation: INSERT INTO users ... for email:", data.email, "cedula:", data.cedula);
+  const result = await res.json();
 
-  // Return a mock user object representing the row returned by the database
-  return {
-    id: `usr_${Math.random().toString(36).substr(2, 9)}`,
-    firstName: data.firstName,
-    lastName: data.lastName,
-    email: data.email,
-    accountType: data.accountType,
-    isOnboarded: false, // Will become true after accepting the onboarding agreement
-    cedula: data.cedula,
-  };
+  if (!res.ok || !result.success) {
+    throw new Error(result.error || "Failed to register user in database");
+  }
+
+  return result.user;
 }
 
 /**
