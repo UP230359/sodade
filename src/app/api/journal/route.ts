@@ -1,19 +1,23 @@
 // app/api/journal/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { RowDataPacket, ResultSetHeader } from 'mysql2';
+
+interface JournalEntry extends RowDataPacket {
+    entry_id: number;
+    user_id: number;
+    title: string;
+    content: string;
+    created_at: string;
+    updated_at: string;
+}
 
 export async function POST(request: NextRequest) {
     try {
-        console.log('🔵 1. Iniciando POST /api/journal');
-        
         const body = await request.json();
-        console.log('🔵 2. Body recibido:', JSON.stringify(body, null, 2));
-
         const { user_id, title, content } = body;
 
-        // Validaciones
         if (!user_id) {
-            console.log('🔴 Error: user_id faltante');
             return NextResponse.json(
                 { error: 'user_id is required' },
                 { status: 400 }
@@ -21,79 +25,34 @@ export async function POST(request: NextRequest) {
         }
 
         if (!content) {
-            console.log('🔴 Error: content faltante');
             return NextResponse.json(
                 { error: 'content is required' },
                 { status: 400 }
             );
         }
 
-        console.log('🔵 3. Validaciones OK');
+        const [result] = await pool.query<ResultSetHeader>(
+            `INSERT INTO journal_entries (user_id, title, content, created_at, updated_at)
+             VALUES (?, ?, ?, NOW(), NOW())`,
+            [user_id, title || 'Untitled', content]
+        );
 
-        // Probar conexión a la base de datos
-        try {
-            console.log('🔵 4. Probando conexión a DB...');
-            const [pingResult] = await pool.query('SELECT 1 as test');
-            console.log('🔵 5. DB conectada:', pingResult);
-        } catch (dbError) {
-            console.log('🔴 Error de conexión DB:', dbError);
-            return NextResponse.json(
-                { 
-                    error: 'Database connection failed',
-                    details: String(dbError)
-                },
-                { status: 500 }
-            );
-        }
+        const insertId = result.insertId;
 
-        // Insertar
-        try {
-            console.log('🔵 6. Insertando entrada...');
-            const query = `
-                INSERT INTO journal_entries (user_id, title, content, created_at, updated_at)
-                VALUES (?, ?, ?, NOW(), NOW())
-            `;
-            const [result] = await pool.query(query, [
-                user_id,
-                title || 'Untitled',
-                content
-            ]);
+        const [rows] = await pool.query<JournalEntry[]>(
+            `SELECT * FROM journal_entries WHERE entry_id = ?`,
+            [insertId]
+        );
 
-            const insertId = (result as any).insertId;
-            console.log('🔵 7. Entrada creada, ID:', insertId);
-
-            // Obtener la entrada creada
-            const [newEntry] = await pool.query(
-                `SELECT * FROM journal_entries WHERE entry_id = ?`,
-                [insertId]
-            );
-
-            console.log('🔵 8. Entrada obtenida:', (newEntry as any[])[0]);
-
-            return NextResponse.json({ 
-                success: true, 
-                entry: (newEntry as any[])[0],
-                entry_id: insertId 
-            });
-
-        } catch (queryError) {
-            console.log('🔴 Error en query:', queryError);
-            return NextResponse.json(
-                { 
-                    error: 'Query failed',
-                    details: String(queryError)
-                },
-                { status: 500 }
-            );
-        }
-
+        return NextResponse.json({ 
+            success: true, 
+            entry: rows[0],
+            entry_id: insertId 
+        });
     } catch (error) {
-        console.log('🔴 Error general:', error);
+        console.error('Error:', error);
         return NextResponse.json(
-            { 
-                error: 'Internal server error',
-                details: String(error)
-            },
+            { error: 'Failed to create journal entry' },
             { status: 500 }
         );
     }
@@ -101,7 +60,6 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     try {
-        console.log('🔵 GET /api/journal');
         const searchParams = request.nextUrl.searchParams;
         const userId = searchParams.get('user_id');
 
@@ -112,17 +70,16 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const [rows] = await pool.query(
+        const [rows] = await pool.query<JournalEntry[]>(
             `SELECT * FROM journal_entries WHERE user_id = ? ORDER BY created_at DESC`,
             [userId]
         );
 
-        console.log(`🔵 ${(rows as any[]).length} entradas encontradas`);
         return NextResponse.json(rows);
     } catch (error) {
-        console.log('🔴 GET error:', error);
+        console.error('GET Error:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch entries' },
+            { error: 'Failed to fetch journal entries' },
             { status: 500 }
         );
     }

@@ -1,38 +1,37 @@
 // app/api/journal/[entry_id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
-// GET - Obtener una entrada específica por ID
+interface JournalEntry extends RowDataPacket {
+    entry_id: number;
+    user_id: number;
+    title: string;
+    content: string;
+    created_at: string;
+    updated_at: string;
+}
+
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ entry_id: string }> }
 ) {
     try {
-        // ✅ Desenvolver params con await
         const { entry_id } = await params;
         
-        const [rows] = await pool.query(
-            `SELECT 
-                entry_id,
-                user_id,
-                title,
-                content,
-                created_at,
-                updated_at
-            FROM journal_entries
-            WHERE entry_id = ?`,
+        const [rows] = await pool.query<JournalEntry[]>(
+            `SELECT * FROM journal_entries WHERE entry_id = ?`,
             [entry_id]
         );
 
-        const entry = (rows as any[])[0];
-        if (!entry) {
+        if (rows.length === 0) {
             return NextResponse.json(
                 { error: 'Entry not found' },
                 { status: 404 }
             );
         }
 
-        return NextResponse.json(entry);
+        return NextResponse.json(rows[0]);
     } catch (error) {
         console.error('Error fetching journal entry:', error);
         return NextResponse.json(
@@ -42,24 +41,21 @@ export async function GET(
     }
 }
 
-// PUT - Actualizar una entrada específica por ID
 export async function PUT(
     request: NextRequest,
     { params }: { params: Promise<{ entry_id: string }> }
 ) {
     try {
-        // ✅ Desenvolver params con await
         const { entry_id } = await params;
         const body = await request.json();
         const { title, content } = body;
 
-        // Verificar que la entrada existe
-        const [existing] = await pool.query(
+        const [existing] = await pool.query<RowDataPacket[]>(
             'SELECT entry_id FROM journal_entries WHERE entry_id = ?',
             [entry_id]
         );
 
-        if ((existing as any[]).length === 0) {
+        if (existing.length === 0) {
             return NextResponse.json(
                 { error: 'Entry not found' },
                 { status: 404 }
@@ -67,7 +63,7 @@ export async function PUT(
         }
 
         const updates: string[] = [];
-        const queryParams: any[] = [];
+        const queryParams: (string | number)[] = [];
 
         if (title !== undefined) {
             updates.push('title = ?');
@@ -89,25 +85,16 @@ export async function PUT(
         updates.push('updated_at = NOW()');
         queryParams.push(entry_id);
         const query = `UPDATE journal_entries SET ${updates.join(', ')} WHERE entry_id = ?`;
-        await pool.query(query, queryParams);
+        await pool.query<ResultSetHeader>(query, queryParams);
 
-        // Obtener la entrada actualizada
-        const [updatedEntry] = await pool.query(
-            `SELECT 
-                entry_id,
-                user_id,
-                title,
-                content,
-                created_at,
-                updated_at
-            FROM journal_entries
-            WHERE entry_id = ?`,
+        const [updatedEntry] = await pool.query<JournalEntry[]>(
+            `SELECT * FROM journal_entries WHERE entry_id = ?`,
             [entry_id]
         );
 
         return NextResponse.json({ 
             success: true, 
-            entry: (updatedEntry as any[])[0]
+            entry: updatedEntry[0]
         });
     } catch (error) {
         console.error('Error updating journal entry:', error);
@@ -118,29 +105,30 @@ export async function PUT(
     }
 }
 
-// DELETE - Eliminar una entrada específica por ID
 export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ entry_id: string }> }
 ) {
     try {
-        // ✅ Desenvolver params con await
         const { entry_id } = await params;
 
-        // Verificar que la entrada existe
-        const [existing] = await pool.query(
+        const [existing] = await pool.query<RowDataPacket[]>(
             'SELECT entry_id FROM journal_entries WHERE entry_id = ?',
             [entry_id]
         );
 
-        if ((existing as any[]).length === 0) {
+        if (existing.length === 0) {
             return NextResponse.json(
                 { error: 'Entry not found' },
                 { status: 404 }
             );
         }
 
-        await pool.query('DELETE FROM journal_entries WHERE entry_id = ?', [entry_id]);
+        await pool.query<ResultSetHeader>(
+            'DELETE FROM journal_entries WHERE entry_id = ?',
+            [entry_id]
+        );
+        
         return NextResponse.json({ 
             success: true,
             message: 'Entry deleted successfully'
