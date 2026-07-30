@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import crypto from "crypto";
+import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 export async function POST(request: Request) {
   try {
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
       await connection.beginTransaction();
 
       // Check if user already exists
-      const [existingUsers]: any = await connection.query(
+      const [existingUsers] = await connection.query<RowDataPacket[]>(
         "SELECT user_id FROM users WHERE email = ? LIMIT 1",
         [email]
       );
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
       }
 
       // Insert user into `users` table
-      const [userResult]: any = await connection.query(
+      const [userResult] = await connection.query<ResultSetHeader>(
         "INSERT INTO users (first_name, last_name, email, password_hash, account_type) VALUES (?, ?, ?, ?, ?)",
         [firstName, lastName, email, passwordHash, accountType]
       );
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
       // If it is a professional account, insert profile into `professional_profiles`
       if (accountType === "professional") {
         // Check if professional_cedula already registered
-        const [existingCedulas]: any = await connection.query(
+        const [existingCedulas] = await connection.query<RowDataPacket[]>(
           "SELECT user_id FROM professional_profiles WHERE professional_cedula = ? LIMIT 1",
           [cedula]
         );
@@ -90,17 +91,18 @@ export async function POST(request: Request) {
         },
       });
 
-    } catch (dbError: any) {
+    } catch (dbError) {
       await connection.rollback();
       throw dbError;
     } finally {
       connection.release();
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("Database registration error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json(
-      { success: false, error: error.message || "Internal server error" },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }

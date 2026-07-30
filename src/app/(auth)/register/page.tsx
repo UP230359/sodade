@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAppDispatch } from "@/store";
-import { setUser } from "@/store/userSlice";
+import { setUser, User } from "@/store/userSlice";
 import { registerUserInDB, updateOnboardingInDB, validateCedula } from "@/lib/auth";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
@@ -27,7 +27,7 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
-  const [tempUser, setTempUser] = useState<any>(null);
+  const [tempUser, setTempUser] = useState<User | null>(null);
 
   // Form Validation
   const validateForm = () => {
