@@ -12,6 +12,7 @@ interface JournalEntry extends RowDataPacket {
     updated_at: string;
 }
 
+// GET - Obtener una entrada específica por ID
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ entry_id: string }> }
@@ -33,7 +34,7 @@ export async function GET(
 
         return NextResponse.json(rows[0]);
     } catch (error) {
-        console.error('Error fetching journal entry:', error);
+        console.error('GET Error:', error);
         return NextResponse.json(
             { error: 'Failed to fetch journal entry' },
             { status: 500 }
@@ -41,6 +42,7 @@ export async function GET(
     }
 }
 
+// PUT - Actualizar una entrada específica por ID
 export async function PUT(
     request: NextRequest,
     { params }: { params: Promise<{ entry_id: string }> }
@@ -50,6 +52,7 @@ export async function PUT(
         const body = await request.json();
         const { title, content } = body;
 
+        // Verificar que la entrada existe
         const [existing] = await pool.query<RowDataPacket[]>(
             'SELECT entry_id FROM journal_entries WHERE entry_id = ?',
             [entry_id]
@@ -62,6 +65,7 @@ export async function PUT(
             );
         }
 
+        // Construir la consulta de actualización
         const updates: string[] = [];
         const queryParams: (string | number)[] = [];
 
@@ -87,6 +91,7 @@ export async function PUT(
         const query = `UPDATE journal_entries SET ${updates.join(', ')} WHERE entry_id = ?`;
         await pool.query<ResultSetHeader>(query, queryParams);
 
+        // Obtener la entrada actualizada
         const [updatedEntry] = await pool.query<JournalEntry[]>(
             `SELECT * FROM journal_entries WHERE entry_id = ?`,
             [entry_id]
@@ -97,7 +102,7 @@ export async function PUT(
             entry: updatedEntry[0]
         });
     } catch (error) {
-        console.error('Error updating journal entry:', error);
+        console.error('PUT Error:', error);
         return NextResponse.json(
             { error: 'Failed to update journal entry' },
             { status: 500 }
@@ -105,6 +110,7 @@ export async function PUT(
     }
 }
 
+// DELETE - Eliminar una entrada específica por ID
 export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ entry_id: string }> }
@@ -112,6 +118,7 @@ export async function DELETE(
     try {
         const { entry_id } = await params;
 
+        // Verificar que la entrada existe
         const [existing] = await pool.query<RowDataPacket[]>(
             'SELECT entry_id FROM journal_entries WHERE entry_id = ?',
             [entry_id]
@@ -124,6 +131,7 @@ export async function DELETE(
             );
         }
 
+        // Eliminar la entrada
         await pool.query<ResultSetHeader>(
             'DELETE FROM journal_entries WHERE entry_id = ?',
             [entry_id]
@@ -134,7 +142,7 @@ export async function DELETE(
             message: 'Entry deleted successfully'
         });
     } catch (error) {
-        console.error('Error deleting journal entry:', error);
+        console.error('DELETE Error:', error);
         return NextResponse.json(
             { error: 'Failed to delete journal entry' },
             { status: 500 }
