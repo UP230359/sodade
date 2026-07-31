@@ -14,7 +14,6 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
 
-    // ✅ CORREGIDO: Sin setState directo en el efecto
     useEffect(() => {
         const checkMobile = () => {
             const mobile = window.innerWidth < 768;
