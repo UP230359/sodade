@@ -1,9 +1,11 @@
+"use client";
+
 import MoodSelector from "@/components/mood/MoodSelector";
 
 export default function Home() {
   return (
     <section>
-      <MoodSelector />
+      <MoodSelector selected={null} onSelect={() => {}} />
     </section>
   );
 }
