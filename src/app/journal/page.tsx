@@ -11,7 +11,6 @@ import {
     deleteJournalEntry,
     selectAllEntries,
     selectJournalLoading,
-    setJournalEntries
 } from "@/store/journalSlice";
 import Button from "@/components/ui/Button";
 import Textarea from "@/components/ui/Textarea";
@@ -67,18 +66,23 @@ export default function JournalPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [saveFeedback, setSaveFeedback] = useState<"idle" | "saving" | "saved" | "error">("idle");
     
-    // Estado para el modal de confirmación de eliminación
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const titleInputRef = useRef<HTMLInputElement>(null);
 
-    // Cargar entradas al montar
+    // ✅ CORREGIDO: Separar efectos - uno para isClient, otro para la carga de datos
     useEffect(() => {
         setIsClient(true);
-        dispatch(fetchJournalEntries(userId));
-    }, [dispatch, userId]);
+    }, []);
+
+    // ✅ CORREGIDO: Cargar entradas solo cuando isClient es true
+    useEffect(() => {
+        if (isClient) {
+            dispatch(fetchJournalEntries(userId));
+        }
+    }, [dispatch, userId, isClient]);
 
     const safeEntries = Array.isArray(entries) ? entries : [];
     const sortedEntries = [...safeEntries].sort(
@@ -161,13 +165,11 @@ export default function JournalPage() {
         setSaveFeedback("idle");
     };
 
-    // Abrir modal de confirmación de eliminación
     const handleDeleteClick = (entry_id: number) => {
         setEntryToDelete(entry_id);
         setShowDeleteModal(true);
     };
 
-    // Confirmar eliminación
     const handleConfirmDelete = async () => {
         if (entryToDelete === null) return;
         
@@ -183,7 +185,6 @@ export default function JournalPage() {
         }
     };
 
-    // Cancelar eliminación
     const handleCancelDelete = () => {
         setShowDeleteModal(false);
         setEntryToDelete(null);
@@ -374,6 +375,11 @@ export default function JournalPage() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg className="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </div>
                             <h2 className="text-xl font-bold text-slate-900">Delete Entry</h2>
                             <p className="text-sm text-slate-500 mt-2">
                                 Are you sure you want to delete this journal entry? 
@@ -393,6 +399,9 @@ export default function JournalPage() {
                                 onClick={handleConfirmDelete}
                                 className="flex-1 px-4 py-2.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors font-medium text-sm flex items-center justify-center gap-2"
                             >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
                                 Delete
                             </button>
                         </div>
