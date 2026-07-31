@@ -1,3 +1,4 @@
+// lib/api.ts
 import axios from "axios";
 
 // Cliente axios centralizado para todas las llamadas al backend
@@ -6,6 +7,33 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+// ============================================
+// TIPOS
+// ============================================
+
+// --- Journal ---
+export interface Journal {
+  entry_id: number;
+  user_id: number;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NewJournal {
+  user_id: number;
+  title: string;
+  content: string;
+}
+
+export interface UpdateJournal {
+  entry_id: number;
+  title?: string;
+  content?: string;
+}
+
+// --- Checkins ---
 export interface Checkin {
   checkin_id: number;
   emotion: string;
@@ -23,18 +51,26 @@ export interface NewCheckin {
   influences?: string[];
 }
 
-export interface Journal {
-  entry_id: number;
-  user_id: number;
-  title: string;
+// --- Insights ---
+export interface Insight {
+  insight_id: number;
+  checkin_id: number;
+  professional_id: number;
+  tag_id: number | null;
   content: string;
   created_at: string;
-  updated_at: string;
+  title?: string;
+  preview?: string;
+  category?: string;
+  isRead?: boolean;
+  isNew?: boolean;
+  type?: "system" | "ai" | "psychologist";
 }
 
-export interface NewJournal {
-  userId: number;
-  title: string;
+export interface NewInsight {
+  checkin_id: number;
+  professional_id: number;
+  tag_id?: number | null;
   content: string;
 }
 
@@ -69,22 +105,49 @@ export const getCheckins = async (userId: number): Promise<Checkin[]> => {
   return data;
 };
 
-export const createCheckin = async (
-  checkin: NewCheckin,
-): Promise<{ checkinId: number }> => {
+export const getCheckinById = async (checkinId: number): Promise<Checkin> => {
+  const { data } = await api.get(`/checkins/${checkinId}`);
+  return data;
+};
+
+export const createCheckin = async (checkin: NewCheckin): Promise<{ checkinId: number }> => {
   const { data } = await api.post("/checkins", checkin);
   return data;
 };
 
-export const getJournals = async (userId: number): Promise<Journal[]> => {
-  const { data } = await api.get("/journal", { params: { userId } });
+export const updateCheckin = async (
+  checkinId: number,
+  data: { note?: string; shared_anonymously?: boolean }
+): Promise<{ success: boolean }> => {
+  const { data: response } = await api.put(`/checkins/${checkinId}`, data);
+  return response;
+};
+
+export const deleteCheckin = async (checkinId: number): Promise<{ success: boolean }> => {
+  const { data } = await api.delete(`/checkins/${checkinId}`);
   return data;
 };
 
-export const createJournal = async (
-  journal: NewJournal,
-): Promise<{ entry_id: number }> => {
-  const { data } = await api.post("/journal", journal);
+// ============================================
+// INSIGHTS API
+// ============================================
+
+export const getInsights = async (params?: {
+  professional_id?: number;
+  checkin_id?: number;
+  limit?: number;
+}): Promise<Insight[]> => {
+  const { data } = await api.get("/insights", { params });
+  return data;
+};
+
+export const getInsightById = async (insightId: number): Promise<Insight> => {
+  const { data } = await api.get(`/insights/${insightId}`);
+  return data;
+};
+
+export const createInsight = async (insight: NewInsight): Promise<{ success: boolean; insight: Insight; insight_id: number }> => {
+  const { data } = await api.post("/insights", insight);
   return data;
 };
 
@@ -97,9 +160,7 @@ export const loginUser = async (
   return data;
 };
 
-export const registerUser = async (
-  credentials: RegisterCredentials,
-): Promise<AuthResponse> => {
+export const registerUser = async (credentials: RegisterCredentials): Promise<AuthResponse> => {
   const { data } = await api.post("/auth/register", credentials);
   return data;
 };
