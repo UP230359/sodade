@@ -1,9 +1,14 @@
+// lib/api.ts
 import axios from "axios";
 
 const api = axios.create({
   baseURL: "/api",
   headers: { "Content-Type": "application/json" },
 });
+
+// ============================================
+// TIPOS EXISTENTES
+// ============================================
 
 export interface Checkin {
   checkin_id: number;
@@ -58,6 +63,89 @@ export interface RegisterCredentials {
   password_hash: string;
 }
 
+// ============================================
+// NUEVOS TIPOS PARA INSIGHTS Y PORTAL
+// ============================================
+
+// --- Insights ---
+export interface Insight {
+  insight_id: number;
+  checkin_id: number;
+  professional_id: number;
+  tag_id: number | null;
+  content: string;
+  created_at: string;
+  // Campos extendidos para UI
+  title?: string;
+  preview?: string;
+  category?: string;
+  isRead?: boolean;
+  isNew?: boolean;
+  type?: "system" | "ai" | "psychologist";
+}
+
+export interface NewInsight {
+  checkin_id: number;
+  professional_id: number;
+  tag_id?: number | null;
+  content: string;
+}
+
+// --- Tags ---
+export interface Tag {
+  tag_id: number;
+  name: string;
+}
+
+// --- Reflections (Community Needs) ---
+export interface Reflection {
+  id: number;
+  user_id: string;
+  content: string;
+  category: "anxiety" | "sadness" | "stress" | "anger" | "calm";
+  timestamp: string;
+  status: "pending" | "draft" | "sent";
+  draft_recommendation?: string;
+  tag?: string;
+  checkin_id?: number;
+}
+
+// --- Responses (My Responses) ---
+export interface PsychologistResponse {
+  id: number;
+  reflection_id: number;
+  user_id: string;
+  reflection_text: string;
+  insight_text: string;
+  category: string;
+  response_date: string;
+}
+
+// --- Verification ---
+export interface VerificationStatus {
+  verified: boolean;
+  professional_id?: number;
+  user_id?: number;
+  institution_name?: string;
+  primary_specialty?: string;
+  verification_status?: string;
+  verification_date?: string;
+}
+
+// --- Professional ---
+export interface Professional {
+  professional_id: number;
+  user_id: number;
+  institution_name: string | null;
+  primary_specialty: string;
+  verification_status: string;
+  verification_date: string;
+}
+
+// ============================================
+// FUNCIONES EXISTENTES
+// ============================================
+
 export const getCheckins = async (userId: number): Promise<Checkin[]> => {
   const { data } = await api.get("/checkins", { params: { userId } });
   return data;
@@ -96,4 +184,155 @@ export const registerUser = async (
   return data;
 };
 
+// ============================================
+// NUEVAS FUNCIONES PARA INSIGHTS
+// ============================================
+
+export const getInsights = async (params?: {
+  professional_id?: number;
+  checkin_id?: number;
+  limit?: number;
+}): Promise<Insight[]> => {
+  const { data } = await api.get("/insights", { params });
+  return data;
+};
+
+export const getInsightById = async (insightId: number): Promise<Insight> => {
+  const { data } = await api.get(`/insights/${insightId}`);
+  return data;
+};
+
+export const createInsight = async (insight: NewInsight): Promise<{ success: boolean; insight: Insight; insight_id: number }> => {
+  const { data } = await api.post("/insights", insight);
+  return data;
+};
+
+export const updateInsight = async (
+  insightId: number,
+  data: { content?: string; tag_id?: number | null }
+): Promise<{ success: boolean }> => {
+  const { data: response } = await api.put(`/insights/${insightId}`, data);
+  return response;
+};
+
+export const deleteInsight = async (insightId: number): Promise<{ success: boolean }> => {
+  const { data } = await api.delete(`/insights/${insightId}`);
+  return data;
+};
+
+export const markInsightAsRead = async (insightId: number): Promise<{ success: boolean }> => {
+  const { data } = await api.put(`/insights/${insightId}/read`);
+  return data;
+};
+
+// ============================================
+// NUEVAS FUNCIONES PARA TAGS
+// ============================================
+
+export const getTags = async (): Promise<Tag[]> => {
+  const { data } = await api.get("/tags");
+  return data;
+};
+
+export const createTag = async (name: string): Promise<{ tag_id: number }> => {
+  const { data } = await api.post("/tags", { name });
+  return data;
+};
+
+// ============================================
+// NUEVAS FUNCIONES PARA REFLECTIONS (Community Needs)
+// ============================================
+
+export const getReflections = async (params?: {
+  category?: string;
+  sort?: "ASC" | "DESC";
+}): Promise<Reflection[]> => {
+  const { data } = await api.get("/reflections", { params });
+  return data;
+};
+
+export const updateReflection = async (
+  reflectionId: number,
+  data: { draft_recommendation?: string; tag?: string; status?: string }
+): Promise<{ success: boolean }> => {
+  const { data: response } = await api.put(`/reflections/${reflectionId}`, data);
+  return response;
+};
+
+// ============================================
+// NUEVAS FUNCIONES PARA RESPONSES (My Responses)
+// ============================================
+
+export const getResponses = async (professionalId: number): Promise<PsychologistResponse[]> => {
+  const { data } = await api.get("/responses", { params: { professional_id: professionalId } });
+  return data;
+};
+
+// ============================================
+// NUEVAS FUNCIONES PARA VERIFICATION
+// ============================================
+
+export const getVerificationStatus = async (userId: number): Promise<VerificationStatus> => {
+  const { data } = await api.get("/verification", { params: { user_id: userId } });
+  return data;
+};
+
+export const getProfessionalById = async (professionalId: number): Promise<Professional> => {
+  const { data } = await api.get(`/professionals/${professionalId}`);
+  return data;
+};
+
+// ============================================
+// NUEVAS FUNCIONES PARA JOURNAL (completas)
+// ============================================
+
+export const getJournalById = async (entryId: number): Promise<Journal> => {
+  const { data } = await api.get(`/journal/${entryId}`);
+  return data;
+};
+
+export const updateJournal = async (
+  entryId: number,
+  data: { title?: string; content?: string }
+): Promise<{ success: boolean; entry: Journal }> => {
+  const { data: response } = await api.put(`/journal/${entryId}`, data);
+  return response;
+};
+
+export const deleteJournal = async (entryId: number): Promise<{ success: boolean }> => {
+  const { data } = await api.delete(`/journal/${entryId}`);
+  return data;
+};
+
+// ============================================
+// INTERCEPTORES
+// ============================================
+
+api.interceptors.request.use(
+  (config) => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;
+

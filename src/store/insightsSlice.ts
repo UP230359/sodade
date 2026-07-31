@@ -1,112 +1,146 @@
-// lib/features/insights/insightsSlice.ts
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Insight } from "@/app/insights/page";
+// store/insightsSlice.ts
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { getInsights, createInsight, deleteInsight, markInsightAsRead, Insight, NewInsight } from "@/lib/api";
 
 interface InsightsState {
-    insights: Insight[];
+  insights: Insight[];
+  loading: boolean;
+  error: string | null;
 }
 
-const loadInitialState = (): InsightsState => {
-    if (typeof window !== "undefined") {
-        const saved = localStorage.getItem("insights");
-        if (saved) {
-            try {
-                return { insights: JSON.parse(saved) };
-            } catch (e) {}
-        }
-    }
-    return { insights: [] };
+const initialState: InsightsState = {
+  insights: [],
+  loading: false,
+  error: null,
 };
 
-const initialState: InsightsState = loadInitialState();
+// ✅ Asegurar que el tipo de retorno sea correcto
+export const fetchInsights = createAsyncThunk<
+  Insight[], // Tipo de retorno
+  number, // Tipo del argumento
+  { rejectValue: string } // Tipo de error
+>(
+  "insights/fetchInsights",
+  async (professionalId: number, { rejectWithValue }) => {
+    try {
+      const insights = await getInsights({ professional_id: professionalId });
+      return insights;
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to fetch insights");
+    }
+  }
+);
+
+export const createInsightEntry = createAsyncThunk<
+  Insight, // Tipo de retorno
+  NewInsight, // Tipo del argumento
+  { rejectValue: string }
+>(
+  "insights/createInsight",
+  async (data: NewInsight, { rejectWithValue }) => {
+    try {
+      const result = await createInsight(data);
+      return result.insight;
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to create insight");
+    }
+  }
+);
+
+export const markInsightAsReadThunk = createAsyncThunk<
+  number,
+  number,
+  { rejectValue: string }
+>(
+  "insights/markAsRead",
+  async (insightId: number, { rejectWithValue }) => {
+    try {
+      await markInsightAsRead(insightId);
+      return insightId;
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to mark as read");
+    }
+  }
+);
+
+export const deleteInsightEntry = createAsyncThunk<
+  number,
+  number,
+  { rejectValue: string }
+>(
+  "insights/deleteInsight",
+  async (insightId: number, { rejectWithValue }) => {
+    try {
+      await deleteInsight(insightId);
+      return insightId;
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to delete insight");
+    }
+  }
+);
 
 const insightsSlice = createSlice({
-    name: "insights",
-    initialState,
-    reducers: {
-        // Set all insights (used for loading from localStorage or API)
-        setInsights: (state, action: PayloadAction<Insight[]>) => {
-            state.insights = action.payload;
-            if (typeof window !== "undefined") {
-                localStorage.setItem("insights", JSON.stringify(state.insights));
-            }
-        },
-
-        // Add a single insight (used when sending from Community Needs)
-        addInsight: (state, action: PayloadAction<Insight>) => {
-            state.insights.unshift(action.payload); // Add to beginning (newest first)
-            if (typeof window !== "undefined") {
-                localStorage.setItem("insights", JSON.stringify(state.insights));
-            }
-        },
-
-        // Mark an insight as read
-        markInsightAsRead: (state, action: PayloadAction<string>) => {
-            const index = state.insights.findIndex((i) => i.id === action.payload);
-            if (index !== -1) {
-                state.insights[index].isRead = true;
-                if (typeof window !== "undefined") {
-                    localStorage.setItem("insights", JSON.stringify(state.insights));
-                }
-            }
-        },
-
-        // Mark all insights as read
-        markAllInsightsAsRead: (state) => {
-            state.insights.forEach((insight) => {
-                insight.isRead = true;
-            });
-            if (typeof window !== "undefined") {
-                localStorage.setItem("insights", JSON.stringify(state.insights));
-            }
-        },
-
-        // Delete a single insight
-        deleteInsight: (state, action: PayloadAction<string>) => {
-            state.insights = state.insights.filter((i) => i.id !== action.payload);
-            if (typeof window !== "undefined") {
-                localStorage.setItem("insights", JSON.stringify(state.insights));
-            }
-        },
-
-        // Clear all insights
-        clearInsights: (state) => {
-            state.insights = [];
-            if (typeof window !== "undefined") {
-                localStorage.removeItem("insights");
-            }
-        },
-
-        // Update an existing insight
-        updateInsight: (state, action: PayloadAction<Insight>) => {
-            const index = state.insights.findIndex((i) => i.id === action.payload.id);
-            if (index !== -1) {
-                state.insights[index] = action.payload;
-                if (typeof window !== "undefined") {
-                    localStorage.setItem("insights", JSON.stringify(state.insights));
-                }
-            }
-        },
+  name: "insights",
+  initialState,
+  reducers: {
+    clearInsights: (state) => {
+      state.insights = [];
     },
+    resetInsights: (state) => {
+      state.insights = [];
+      state.loading = false;
+      state.error = null;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchInsights.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchInsights.fulfilled, (state, action) => {
+        state.loading = false;
+        state.insights = action.payload || [];
+      })
+      .addCase(fetchInsights.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch insights";
+        state.insights = [];
+      })
+      .addCase(createInsightEntry.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createInsightEntry.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.payload) {
+          state.insights = [action.payload, ...(state.insights || [])];
+        }
+      })
+      .addCase(createInsightEntry.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to create insight";
+      })
+      .addCase(markInsightAsReadThunk.fulfilled, (state, action) => {
+        const index = (state.insights || []).findIndex((i) => i.insight_id === action.payload);
+        if (index !== -1) {
+          state.insights[index].isRead = true;
+        }
+      })
+      .addCase(deleteInsightEntry.fulfilled, (state, action) => {
+        state.insights = (state.insights || []).filter((i) => i.insight_id !== action.payload);
+      });
+  },
 });
 
-// --- Actions ---
-export const {
-    setInsights,
-    addInsight,
-    markInsightAsRead,
-    markAllInsightsAsRead,
-    deleteInsight,
-    clearInsights,
-    updateInsight,
-} = insightsSlice.actions;
+export const { clearInsights, resetInsights } = insightsSlice.actions;
 
-// --- Selectors ---
-export const selectAllInsights = (state: { insights: InsightsState }) => state.insights.insights;
+export const selectAllInsights = (state: { insights: InsightsState }) => state.insights.insights || [];
 export const selectUnreadInsights = (state: { insights: InsightsState }) =>
-    state.insights.insights.filter((i) => !i.isRead);
+  (state.insights.insights || []).filter((i) => !i.isRead);
 export const selectUnreadCount = (state: { insights: InsightsState }) =>
-    state.insights.insights.filter((i) => !i.isRead).length;
+  (state.insights.insights || []).filter((i) => !i.isRead).length;
+export const selectInsightsLoading = (state: { insights: InsightsState }) => state.insights.loading || false;
+export const selectInsightsError = (state: { insights: InsightsState }) => state.insights.error || null;
 
-// --- Reducer ---
 export default insightsSlice.reducer;

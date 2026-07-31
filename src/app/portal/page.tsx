@@ -1,24 +1,13 @@
-// app/portal/community/page.tsx - Community Needs
+// app/portal/community/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { addInsight } from "@/store/insightsSlice";
-import { RootState } from "@/store/index";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "@/store/index";
+import { createInsightEntry } from "@/store/insightsSlice";
+import { getReflections, updateReflection, Reflection, NewInsight } from "@/lib/api";
 import Button from "@/components/ui/Button";
 import Textarea from "@/components/ui/Textarea";
-
-// --- Types ---
-interface Reflection {
-    id: string;
-    userId: string;
-    content: string;
-    category: "anxiety" | "sadness" | "stress" | "anger" | "calm";
-    timestamp: string;
-    status: "pending" | "draft" | "sent";
-    draftRecommendation?: string;
-    tag?: string;
-}
 
 // --- Helper Functions ---
 const getTimeAgo = (dateString: string) => {
@@ -39,121 +28,104 @@ const getTimeAgo = (dateString: string) => {
     });
 };
 
-const getCategoryColor = (category: Reflection["category"]) => {
+const getCategoryColor = (category: string) => {
     switch (category) {
-        case "anxiety": return "bg-[#28A745]/10 text-[#28A745] border-[#28A745]/30";
-        case "sadness": return "bg-[#007BFF]/10 text-[#007BFF] border-[#007BFF]/30";
-        case "stress": return "bg-[#DC3545]/10 text-[#DC3545] border-[#DC3545]/30";
-        case "anger": return "bg-[#DC3545]/10 text-[#DC3545] border-[#DC3545]/30";
-        case "calm": return "bg-[#28A745]/10 text-[#28A745] border-[#28A745]/30";
-        default: return "bg-[#6C757D]/10 text-[#6C757D] border-[#6C757D]/30";
+        case "anxiety": return "bg-orange-100 text-orange-700 border-orange-200";
+        case "sadness": return "bg-blue-100 text-blue-700 border-blue-200";
+        case "stress": return "bg-red-100 text-red-700 border-red-200";
+        case "anger": return "bg-rose-100 text-rose-700 border-rose-200";
+        case "calm": return "bg-green-100 text-green-700 border-green-200";
+        default: return "bg-gray-100 text-gray-700 border-gray-200";
     }
 };
-
-const getCategoryLabel = (category: Reflection["category"]) => {
-    switch (category) {
-        case "anxiety": return "Anxiety";
-        case "sadness": return "Sadness";
-        case "stress": return "Stress";
-        case "anger": return "Anger";
-        case "calm": return "Calm";
-        default: return "General";
-    }
-};
-
-// --- Mock Data ---
-const mockReflections: Reflection[] = [
-    {
-        id: "1",
-        userId: "88849",
-        content: 'I have been feeling completely overwhelmed at work lately. No matter how much I get done, it feels like the pile just gets bigger. I am having trouble sleeping because my mind won\'t shut off."',
-        category: "anxiety",
-        timestamp: "2026-07-23T10:30:00Z",
-        status: "pending",
-        draftRecommendation: "Try grounding techniques when feeling overwhelmed...",
-        tag: "Grounding",
-    },
-    {
-        id: "2",
-        userId: "81022",
-        content: 'I feel so sad and lonely. I moved to a new city and haven\'t made any friends yet. I feel guilty for feeling this way."',
-        category: "sadness",
-        timestamp: "2026-07-23T08:15:00Z",
-        status: "pending",
-        draftRecommendation: "",
-    },
-];
 
 // --- Main Component ---
 export default function CommunityPage() {
-    const dispatch = useDispatch();
-    const insights = useSelector((state: RootState) => state.insights?.insights || []);
-    const [isClient, setIsClient] = useState(false);
-    const [reflections, setReflections] = useState<Reflection[]>(mockReflections);
+    const dispatch = useDispatch<AppDispatch>();
+    const [reflections, setReflections] = useState<Reflection[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [filter, setFilter] = useState<"all" | Reflection["category"]>("all");
     const [sort, setSort] = useState<"newest" | "oldest">("newest");
-    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [draftText, setDraftText] = useState("");
     const [tagInput, setTagInput] = useState("");
+    const [professionalId] = useState(1); // TODO: Obtener del usuario logueado
 
     useEffect(() => {
-        setIsClient(true);
-    }, []);
+        loadReflections();
+    }, [filter, sort]);
 
-    const unreadCount = insights.filter((i: any) => !i.isRead).length;
-
-    const filteredReflections = reflections
-        .filter((r) => filter === "all" || r.category === filter)
-        .sort((a, b) => {
-            const dateA = new Date(a.timestamp).getTime();
-            const dateB = new Date(b.timestamp).getTime();
-            return sort === "newest" ? dateB - dateA : dateA - dateB;
-        });
-
-    const handleSaveDraft = (id: string) => {
-        setReflections((prev) =>
-            prev.map((r) =>
-                r.id === id
-                    ? { ...r, draftRecommendation: draftText, status: "draft", tag: tagInput || r.tag }
-                    : r
-            )
-        );
-        setEditingId(null);
-        setDraftText("");
-        setTagInput("");
+    const loadReflections = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await getReflections({
+                category: filter === "all" ? undefined : filter,
+                sort: sort === "newest" ? "DESC" : "ASC",
+            });
+            setReflections(data);
+        } catch (err) {
+            console.error("Error loading reflections:", err);
+            setError("Failed to load reflections. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleSendInsight = (id: string) => {
-        const reflection = reflections.find((r) => r.id === id);
-        if (!reflection || !reflection.draftRecommendation) return;
+    const handleSaveDraft = async (id: number) => {
+        if (!draftText.trim()) {
+            return;
+        }
 
-        const newInsight = {
-            id: `insight-${Date.now()}`,
-            type: "psychologist" as const,
-            title: `Response to User ${reflection.userId}`,
-            preview: reflection.draftRecommendation.slice(0, 150) + "...",
-            content: `**User Reflection:**\n${reflection.content}\n\n**Psychologist Response:**\n${reflection.draftRecommendation}\n\n— ${reflection.tag ? `Tag: ${reflection.tag}` : ""}`,
-            category: getCategoryLabel(reflection.category),
-            timestamp: new Date().toISOString(),
-            isRead: false,
-            isNew: true,
-        };
+        try {
+            await updateReflection(id, {
+                draft_recommendation: draftText.trim(),
+                tag: tagInput.trim() || undefined,
+                status: "draft",
+            });
+            await loadReflections();
+            setEditingId(null);
+            setDraftText("");
+            setTagInput("");
+        } catch (err) {
+            console.error("Error saving draft:", err);
+            setError("Failed to save draft. Please try again.");
+        }
+    };
 
-        dispatch(addInsight(newInsight));
+    const handleSendInsight = async (reflection: Reflection) => {
+        if (!reflection.draft_recommendation?.trim()) {
+            return;
+        }
 
-        setReflections((prev) =>
-            prev.map((r) =>
-                r.id === id ? { ...r, status: "sent" } : r
-            )
-        );
-        setEditingId(null);
-        setDraftText("");
-        setTagInput("");
+        try {
+            const payload: NewInsight = {
+                checkin_id: reflection.checkin_id || 1,
+                professional_id: professionalId,
+                tag_id: null,
+                content: reflection.draft_recommendation.trim(),
+            };
+
+            await dispatch(createInsightEntry(payload)).unwrap();
+
+            await updateReflection(reflection.id, {
+                status: "sent",
+            });
+
+            await loadReflections();
+            setEditingId(null);
+            setDraftText("");
+            setTagInput("");
+        } catch (err) {
+            console.error("Error sending insight:", err);
+            setError("Failed to send insight. Please try again.");
+        }
     };
 
     const handleEditDraft = (reflection: Reflection) => {
         setEditingId(reflection.id);
-        setDraftText(reflection.draftRecommendation || "");
+        setDraftText(reflection.draft_recommendation || "");
         setTagInput(reflection.tag || "");
     };
 
@@ -163,70 +135,81 @@ export default function CommunityPage() {
         setTagInput("");
     };
 
-    if (!isClient) {
+    if (loading) {
         return (
-            <div className="min-h-screen bg-[#FFFFFF]">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12">
+            <div className="p-6 md:p-8">
+                <div className="mb-8">
+                    <p className="text-sm text-[#6C757D]">Psychologist Dashboard</p>
                     <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[#333333]">Community Needs</h1>
+                    <p className="text-sm text-[#6C757D]">Review anonymous reflections and offer guidance.</p>
+                </div>
+                <div className="text-center py-12">
+                    <p className="text-[#6C757D]">Loading reflections...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#FFFFFF]">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12">
-                {/* Header */}
-                <div className="mb-8">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-[#6C757D]">Psychologist Dashboard</p>
-                            <div className="flex items-center gap-3 mb-1">
-                                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[#333333]">Community Needs</h1>
-                            </div>
-                            <p className="text-sm text-[#6C757D]">Review anonymous reflections and offer guidance.</p>
-                        </div>
-                        {unreadCount > 0 && (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#007BFF]/10 text-[#007BFF] border border-[#007BFF]/30">
-                                {unreadCount} insights sent
-                            </span>
-                        )}
-                    </div>
-                </div>
+        <div className="p-6 md:p-8">
+            {/* Header */}
+            <div className="mb-8">
+                <p className="text-sm text-[#6C757D]">Psychologist Dashboard</p>
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[#333333]">Community Needs</h1>
+                <p className="text-sm text-[#6C757D]">Review anonymous reflections and offer guidance.</p>
+            </div>
 
-                {/* Filters */}
-                <div className="flex flex-wrap items-center gap-4 mb-6">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-[#6C757D]">Filter:</span>
-                        <select
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value as typeof filter)}
-                            className="px-3 py-1.5 rounded-lg border border-[#6C757D]/30 bg-[#FFFFFF] text-[#333333] text-sm focus:outline-none focus:ring-2 focus:ring-[#007BFF]"
-                        >
-                            <option value="all">All</option>
-                            <option value="anxiety">High Anxiety</option>
-                            <option value="sadness">Sadness</option>
-                            <option value="stress">Stress</option>
-                            <option value="anger">Anger</option>
-                            <option value="calm">Calm</option>
-                        </select>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-[#6C757D]">Sort:</span>
-                        <select
-                            value={sort}
-                            onChange={(e) => setSort(e.target.value as typeof sort)}
-                            className="px-3 py-1.5 rounded-lg border border-[#6C757D]/30 bg-[#FFFFFF] text-[#333333] text-sm focus:outline-none focus:ring-2 focus:ring-[#007BFF]"
-                        >
-                            <option value="newest">Newest</option>
-                            <option value="oldest">Oldest</option>
-                        </select>
-                    </div>
+            {/* Error Message */}
+            {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                    {error}
+                    <button 
+                        onClick={loadReflections}
+                        className="ml-3 text-red-600 hover:text-red-800 font-medium"
+                    >
+                        Retry
+                    </button>
                 </div>
+            )}
 
-                {/* Reflections List */}
-                <div className="space-y-4">
-                    {filteredReflections.map((reflection) => {
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-[#6C757D]">Filter:</span>
+                    <select
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value as typeof filter)}
+                        className="px-3 py-1.5 rounded-lg border border-[#6C757D]/30 bg-[#FFFFFF] text-[#333333] text-sm focus:outline-none focus:ring-2 focus:ring-[#007BFF]"
+                    >
+                        <option value="all">All</option>
+                        <option value="anxiety">High Anxiety</option>
+                        <option value="sadness">Sadness</option>
+                        <option value="stress">Stress</option>
+                        <option value="anger">Anger</option>
+                        <option value="calm">Calm</option>
+                    </select>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-[#6C757D]">Sort:</span>
+                    <select
+                        value={sort}
+                        onChange={(e) => setSort(e.target.value as typeof sort)}
+                        className="px-3 py-1.5 rounded-lg border border-[#6C757D]/30 bg-[#FFFFFF] text-[#333333] text-sm focus:outline-none focus:ring-2 focus:ring-[#007BFF]"
+                    >
+                        <option value="newest">Newest</option>
+                        <option value="oldest">Oldest</option>
+                    </select>
+                </div>
+            </div>
+
+            {/* Reflections List */}
+            <div className="space-y-4">
+                {reflections.length === 0 ? (
+                    <div className="text-center py-12 bg-[#FFFFFF] rounded-2xl border border-[#F4F4F4]">
+                        <p className="text-[#6C757D]">No reflections available</p>
+                    </div>
+                ) : (
+                    reflections.map((reflection) => {
                         const isEditing = editingId === reflection.id;
                         const categoryColor = getCategoryColor(reflection.category);
 
@@ -239,7 +222,7 @@ export default function CommunityPage() {
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${categoryColor}`}>
                                                 {reflection.category.toUpperCase()}
                                             </span>
-                                            <span className="text-xs text-[#6C757D]">User ID: {reflection.userId}</span>
+                                            <span className="text-xs text-[#6C757D]">User ID: {reflection.user_id}</span>
                                             <span className="text-xs text-[#6C757D]">{getTimeAgo(reflection.timestamp)}</span>
                                         </div>
                                         {reflection.status === "sent" && (
@@ -250,7 +233,9 @@ export default function CommunityPage() {
                                     </div>
 
                                     {/* Content */}
-                                    <p className="text-sm text-[#333333] leading-relaxed mb-3">{reflection.content}</p>
+                                    <p className="text-sm text-[#333333] leading-relaxed mb-3">
+                                        {reflection.content}
+                                    </p>
 
                                     {/* Verification Status */}
                                     <div className="flex items-center gap-2 mb-3">
@@ -277,13 +262,22 @@ export default function CommunityPage() {
                                                     className="flex-1 px-3 py-2 rounded-lg border border-[#6C757D]/30 text-[#333333] text-sm focus:outline-none focus:ring-2 focus:ring-[#007BFF]"
                                                 />
                                                 <div className="flex gap-2">
-                                                    <button onClick={handleCancelEdit} className="px-4 py-2 rounded-lg border border-[#6C757D]/30 text-[#6C757D] hover:bg-[#F4F4F4] transition-colors text-sm font-medium">
+                                                    <button 
+                                                        onClick={handleCancelEdit} 
+                                                        className="px-4 py-2 rounded-lg border border-[#6C757D]/30 text-[#6C757D] hover:bg-[#F4F4F4] transition-colors text-sm font-medium"
+                                                    >
                                                         Cancel
                                                     </button>
-                                                    <button onClick={() => handleSaveDraft(reflection.id)} className="px-4 py-2 rounded-lg border border-[#6C757D]/30 text-[#6C757D] hover:bg-[#F4F4F4] transition-colors text-sm font-medium">
+                                                    <button 
+                                                        onClick={() => handleSaveDraft(reflection.id)} 
+                                                        className="px-4 py-2 rounded-lg border border-[#6C757D]/30 text-[#6C757D] hover:bg-[#F4F4F4] transition-colors text-sm font-medium"
+                                                    >
                                                         Save Draft
                                                     </button>
-                                                    <button onClick={() => handleSendInsight(reflection.id)} className="px-4 py-2 rounded-lg bg-[#007BFF] text-white hover:bg-[#007BFF]/90 transition-colors text-sm font-medium">
+                                                    <button 
+                                                        onClick={() => handleSendInsight(reflection)} 
+                                                        className="px-4 py-2 rounded-lg bg-[#007BFF] text-white hover:bg-[#007BFF]/90 transition-colors text-sm font-medium"
+                                                    >
                                                         Send Insight
                                                     </button>
                                                 </div>
@@ -291,10 +285,10 @@ export default function CommunityPage() {
                                         </div>
                                     ) : (
                                         <>
-                                            {reflection.draftRecommendation && (
+                                            {reflection.draft_recommendation && (
                                                 <div className="bg-[#F4F4F4] rounded-xl p-3 mb-3 border border-[#6C757D]/10">
                                                     <p className="text-xs text-[#6C757D] font-medium mb-1">DRAFT RECOMMENDATION</p>
-                                                    <p className="text-sm text-[#333333]">{reflection.draftRecommendation}</p>
+                                                    <p className="text-sm text-[#333333]">{reflection.draft_recommendation}</p>
                                                     {reflection.tag && (
                                                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#007BFF]/10 text-[#007BFF] border border-[#007BFF]/30 mt-2">
                                                             {reflection.tag}
@@ -303,7 +297,10 @@ export default function CommunityPage() {
                                                 </div>
                                             )}
                                             {reflection.status !== "sent" && (
-                                                <button onClick={() => handleEditDraft(reflection)} className="px-4 py-2 rounded-lg border border-[#007BFF] text-[#007BFF] hover:bg-[#007BFF]/10 transition-colors text-sm font-medium">
+                                                <button 
+                                                    onClick={() => handleEditDraft(reflection)} 
+                                                    className="px-4 py-2 rounded-lg border border-[#007BFF] text-[#007BFF] hover:bg-[#007BFF]/10 transition-colors text-sm font-medium"
+                                                >
                                                     Respond to this reflection
                                                 </button>
                                             )}
@@ -312,8 +309,8 @@ export default function CommunityPage() {
                                 </div>
                             </div>
                         );
-                    })}
-                </div>
+                    })
+                )}
             </div>
         </div>
     );
