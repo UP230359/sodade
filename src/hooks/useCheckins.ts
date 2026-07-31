@@ -12,28 +12,55 @@ export function useCheckins(userId: number | null) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCheckins = useCallback(async () => {
-    if (!userId) return; // sin usuario logueado no hay nada que pedir
+  useEffect(() => {
+    if (!userId) return;
+
+    let isMounted = true;
+
+    const fetchCheckins = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await getCheckins(userId);
+        if (isMounted) {
+          setCheckins(data);
+        }
+      } catch {
+        if (isMounted) {
+          setError("No se pudieron cargar tus reflexiones. Intenta de nuevo.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchCheckins();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userId]);
+
+  const refetch = useCallback(async () => {
+    if (!userId) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await getCheckins(userId); // GET /api/checkins?userId=...
+      const data = await getCheckins(userId);
       setCheckins(data);
-    } catch (err) {
+    } catch {
       setError("No se pudieron cargar tus reflexiones. Intenta de nuevo.");
     } finally {
       setLoading(false);
     }
   }, [userId]);
 
-  useEffect(() => {
-    fetchCheckins();
-  }, [fetchCheckins]);
-
   const addCheckin = async (checkin: NewCheckin) => {
     await createCheckin(checkin);
-    await fetchCheckins();
+    await refetch();
   };
 
-  return { checkins, loading, error, addCheckin, refetch: fetchCheckins };
+  return { checkins, loading, error, addCheckin, refetch };
 }
