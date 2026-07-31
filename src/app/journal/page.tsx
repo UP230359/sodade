@@ -56,7 +56,6 @@ export default function JournalPage() {
     const dispatch = useDispatch<AppDispatch>();
     const entries = useSelector(selectAllEntries) || [];
     const loading = useSelector(selectJournalLoading) || false;
-    const [isClient, setIsClient] = useState(false);
     const [userId] = useState(1);
 
     const [title, setTitle] = useState("");
@@ -72,17 +71,9 @@ export default function JournalPage() {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const titleInputRef = useRef<HTMLInputElement>(null);
 
-    // ✅ CORREGIDO: Separar efectos - uno para isClient, otro para la carga de datos
     useEffect(() => {
-        setIsClient(true);
-    }, []);
-
-    // ✅ CORREGIDO: Cargar entradas solo cuando isClient es true
-    useEffect(() => {
-        if (isClient) {
-            dispatch(fetchJournalEntries(userId));
-        }
-    }, [dispatch, userId, isClient]);
+        dispatch(fetchJournalEntries(userId));
+    }, [dispatch, userId]);
 
     const safeEntries = Array.isArray(entries) ? entries : [];
     const sortedEntries = [...safeEntries].sort(
@@ -200,16 +191,6 @@ export default function JournalPage() {
     const toggleExpand = (entry_id: number) => {
         setExpandedEntryId(expandedEntryId === entry_id ? null : entry_id);
     };
-
-    if (!isClient) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-white to-orange-50/30">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12">
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">Journal</h1>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-white to-orange-50/30">
