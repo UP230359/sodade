@@ -1,12 +1,14 @@
 import { configureStore } from "@reduxjs/toolkit";
 import moodReducer from "./moodSlice";
 import userReducer from "./userSlice";
+import journalReducer from "./journalSlice";
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 
 export const store = configureStore({
   reducer: {
     mood: moodReducer,
     user: userReducer,
+    journal: journalReducer,
   },
 });
 
