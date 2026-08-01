@@ -1,7 +1,7 @@
 // src/app/portal/verification/page.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { getVerificationStatus, VerificationStatus } from "@/lib/api";
 
 export default function VerificationPage() {
@@ -9,21 +9,20 @@ export default function VerificationPage() {
     const [loading, setLoading] = useState(true);
     const [userId] = useState(10);
 
-    const loadVerification = useCallback(async () => {
-        setLoading(true);
-        try {
-            const data = await getVerificationStatus(userId);
-            setVerification(data);
-        } catch (error) {
-            console.error("Error loading verification:", error);
-        } finally {
-            setLoading(false);
-        }
-    }, [userId]);
-
     useEffect(() => {
+        const loadVerification = async () => {
+            setLoading(true);
+            try {
+                const data = await getVerificationStatus(userId);
+                setVerification(data);
+            } catch (error) {
+                console.error("Error loading verification:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
         loadVerification();
-    }, [loadVerification]);
+    }, [userId]);
 
     if (loading) {
         return (
