@@ -1,6 +1,15 @@
-// app/api/portal/reflections/route.ts
+// src/app/api/portal/reflections/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { RowDataPacket } from 'mysql2';
+
+interface CheckinRow extends RowDataPacket {
+    checkin_id: number;
+    user_id: number;
+    note: string | null;
+    emotion_id: number;
+    created_at: string;
+}
 
 export async function GET(request: NextRequest) {
     try {
@@ -22,19 +31,15 @@ export async function GET(request: NextRequest) {
             FROM checkins
             WHERE 1=1
         `;
-
-        const params: any[] = [];
-
+        const params: (string | number)[] = [];
         if (emotionId && emotionId !== 'all') {
             query += ` AND emotion_id = ?`;
             params.push(parseInt(emotionId));
         }
-
         query += ` ORDER BY created_at ${sort}`;
 
-        const [rows] = await pool.query(query, params);
-        
-        const formatted = (rows as any[]).map(row => ({
+        const [rows] = await pool.query<CheckinRow[]>(query, params);
+        const formatted = rows.map(row => ({
             id: row.id,
             user_id: row.user_id,
             content: row.content || '',
@@ -43,9 +48,8 @@ export async function GET(request: NextRequest) {
             status: 'pending',
             draft_recommendation: null,
             tag: null,
-            checkin_id: row.checkin_id
+            checkin_id: row.checkin_id,
         }));
-
         return NextResponse.json(formatted);
     } catch (error) {
         console.error('Error fetching checkins:', error);
@@ -59,21 +63,17 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
     try {
         const body = await request.json();
-        console.log('🔵 PUT /api/portal/reflections - Body:', body);
-        
         const { id, draft_recommendation } = body;
-
         if (!id) {
             return NextResponse.json(
                 { error: 'id is required' },
                 { status: 400 }
             );
         }
-
         // Simular actualización (no modificamos checkins)
-        return NextResponse.json({ 
+        return NextResponse.json({
             success: true,
-            message: 'Reflection updated (simulated)'
+            message: 'Reflection updated (simulated)',
         });
     } catch (error) {
         console.error('Error updating reflection:', error);

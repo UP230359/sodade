@@ -1,7 +1,7 @@
-// app/api/portal/tags/route.ts - Usando insight_tags existente
-import { NextRequest, NextResponse } from 'next/server';
+// src/app/api/portal/tags/route.ts
+import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { RowDataPacket } from 'mysql2';
 
 interface TagRow extends RowDataPacket {
     tag_id: number;

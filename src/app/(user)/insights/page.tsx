@@ -1,14 +1,14 @@
-// app/insights/page.tsx
+// src/app/(user)/insights/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { AppDispatch, RootState } from "@/store/index";
 import { deleteInsightEntry, setInsights } from "@/store/insightsSlice";
 import { getInsights } from "@/lib/api";
 
 // --- Types ---
-export interface Insight {
+interface Insight {
     id: string;
     type: "system" | "ai" | "psychologist";
     title: string;
@@ -50,22 +50,15 @@ const mockInsights: Insight[] = [];
 
 // --- Main Component ---
 export default function InsightsPage() {
-    const dispatch = useDispatch<AppDispatch>(); // ✅ Usar AppDispatch
+    const dispatch = useDispatch<AppDispatch>();
     const insights = useSelector((state: RootState) => state.insights?.insights || []);
-    const [isClient, setIsClient] = useState(false);
     const [userId] = useState(1);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
 
-    useEffect(() => {
-        setIsClient(true);
-        loadInsightsFromAPI();
-    }, []);
-
-    const loadInsightsFromAPI = async () => {
+    const loadInsightsFromAPI = useCallback(async () => {
         try {
             const data = await getInsights({ user_id: userId });
-            
             const formattedInsights = data.map((item: any) => ({
                 id: String(item.insight_id),
                 type: "psychologist",
@@ -89,38 +82,33 @@ export default function InsightsPage() {
                 dispatch(setInsights(mockInsights));
             }
         }
-    };
+    }, [userId, dispatch, insights.length]);
 
-    // ✅ Función para eliminar un insight - Corregida
+    useEffect(() => {
+        loadInsightsFromAPI();
+    }, [loadInsightsFromAPI]);
+
     const handleDeleteInsight = async (id: string) => {
         if (isDeleting) return;
-        
-        if (!window.confirm("Are you sure you want to delete this insight?")) {
-            return;
-        }
+        if (!window.confirm("Are you sure you want to delete this insight?")) return;
 
         setIsDeleting(true);
         setDeleteError(null);
 
         try {
             const insightId = parseInt(id);
-            // ✅ Despachar correctamente
             await dispatch(deleteInsightEntry(insightId)).unwrap();
-            
-            // ✅ Recargar la lista después de eliminar
             await loadInsightsFromAPI();
-            
             alert("✅ Insight deleted successfully");
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error deleting insight:", error);
-            setDeleteError(error.message || "Failed to delete insight. Please try again.");
+            setDeleteError(error instanceof Error ? error.message : "Failed to delete insight. Please try again.");
         } finally {
             setIsDeleting(false);
         }
     };
 
-    // ✅ Asegurar que displayInsights siempre sea un array
-    const displayInsights = Array.isArray(insights) && insights.length > 0 ? insights : mockInsights;
+    const displayInsights = insights.length > 0 ? insights : mockInsights;
 
     const getTypeLabel = (type: Insight["type"]) => {
         switch (type) {
@@ -135,23 +123,14 @@ export default function InsightsPage() {
         (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
 
-    if (!isClient) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-white to-orange-50/30">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12">
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
-                        Insights Inbox
-                    </h1>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-white to-orange-50/30">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12">
+                {/* Header */}
                 <div className="mb-8">
-                    <h2 className="text-naranja-Title">Professional Guidance</h2>
+                    <h2 className="text-naranja-Title">
+                        Professional Guidance
+                    </h2>
                     <div className="flex items-center gap-3 mb-1">
                         <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
                             Insights Inbox
@@ -167,15 +146,13 @@ export default function InsightsPage() {
                 {deleteError && (
                     <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
                         {deleteError}
-                        <button 
-                            onClick={() => setDeleteError(null)}
-                            className="ml-3 text-red-600 hover:text-red-800 font-medium"
-                        >
+                        <button onClick={() => setDeleteError(null)} className="ml-3 text-red-600 hover:text-red-800 font-medium">
                             Dismiss
                         </button>
                     </div>
                 )}
 
+                {/* Insights List */}
                 <div className="bg-white rounded-2xl shadow-lg border border-slate-200/80 overflow-hidden">
                     {sortedInsights.length === 0 ? (
                         <div className="text-center py-12">
@@ -184,15 +161,18 @@ export default function InsightsPage() {
                     ) : (
                         <div className="divide-y divide-slate-100">
                             {sortedInsights.map((insight) => (
-                                <div key={insight.id} className="card-dark">
+                                <div
+                                    key={insight.id}
+                                    className="p-4 md:p-5 cursor-pointer hover:bg-slate-50 transition-colors bg-[#1C1A17]"
+                                >
                                     <div className="flex items-start gap-3">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <h2 className="text-naranja-brillante">
+                                                <h3 className="font-medium text-amber-400">
                                                     {insight.title}
-                                                </h2>
+                                                </h3>
                                             </div>
-                                            <p className="text-sm line-clamp-2 mt-0.5 text-white/80">
+                                            <p className="text-sm text-white/80 line-clamp-2 mt-0.5">
                                                 {insight.preview}
                                             </p>
                                             <div className="flex items-center gap-3 mt-2">
@@ -210,7 +190,7 @@ export default function InsightsPage() {
                                         <button
                                             onClick={() => handleDeleteInsight(insight.id)}
                                             disabled={isDeleting}
-                                            className="flex-shrink-0 p-1.5 rounded-lg hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="flex-shrink-0 p-1.5 rounded-lg hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors disabled:opacity-50"
                                             title="Delete insight"
                                         >
                                             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

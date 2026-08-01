@@ -1,47 +1,26 @@
-import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { RowDataPacket, ResultSetHeader } from "mysql2";
+// src/app/api/auth/register/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import pool from '@/lib/db';
+import { ResultSetHeader } from 'mysql2';
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { name, email, password_hash } = body;
+export async function POST(request: NextRequest) {
+    try {
+        const body = await request.json();
+        const { name, email, password_hash } = body;
 
-    if (!name || !email || !password_hash) {
-      return NextResponse.json(
-        { message: "Missing required fields" },
-        { status: 400 },
-      );
+        const [result] = await pool.query<ResultSetHeader>(
+            'INSERT INTO users (first_name, last_name, email, password_hash, account_type) VALUES (?, ?, ?, ?, ?)',
+            [name, '', email, password_hash, 'user']
+        );
+
+        return NextResponse.json({
+            user: { id: result.insertId, name, email },
+            token: 'fake-jwt-token',
+        });
+    } catch (_error) {
+        return NextResponse.json(
+            { error: 'Registration failed' },
+            { status: 500 }
+        );
     }
-
-    const [existingUsers] = await db.execute<RowDataPacket[]>(
-      "SELECT id FROM users WHERE email = ?",
-      [email],
-    );
-
-    if (existingUsers.length > 0) {
-      return NextResponse.json(
-        { message: "Email already registered" },
-        { status: 409 },
-      );
-    }
-
-    const [result] = await db.execute<ResultSetHeader>(
-      "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
-      [name, email, password_hash],
-    );
-
-    return NextResponse.json(
-      {
-        user: { id: result.insertId, name, email },
-        token: "sodade-dummy-token",
-      },
-      { status: 201 },
-    );
-  } catch (error) {
-    return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 },
-    );
-  }
 }

@@ -1,17 +1,16 @@
-// app/api/portal/responses/route.ts
+// src/app/api/portal/responses/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
 
-interface InsightRow extends RowDataPacket {
-    insight_id: number;
-    checkin_id: number;
-    professional_id: number;
-    tag_id: number | null;
-    content: string;
-    created_at: string;
-    user_id: number;
-    note: string | null;
+interface ResponseRow extends RowDataPacket {
+    id: number;
+    reflection_id: number;
+    user_id: string;
+    reflection_text: string;
+    insight_text: string;
+    category: string;
+    response_date: string;
 }
 
 export async function GET(request: NextRequest) {
@@ -21,34 +20,29 @@ export async function GET(request: NextRequest) {
 
         let query = `
             SELECT 
-                i.insight_id as id,
-                i.checkin_id as reflection_id,
-                i.professional_id,
-                c.user_id,
-                c.note as reflection_text,
-                i.content as insight_text,
-                'GENERAL' as category,
-                i.created_at as response_date
-            FROM insights i
-            LEFT JOIN checkins c ON i.checkin_id = c.checkin_id
+                id,
+                reflection_id,
+                user_id,
+                reflection_text,
+                insight_text,
+                category,
+                response_date
+            FROM psychologist_responses
             WHERE 1=1
         `;
-
-        const params: any[] = [];
-
+        const params: (string | number)[] = [];
         if (professionalId) {
-            query += ` AND i.professional_id = ?`;
-            params.push(professionalId);
+            query += ` AND professional_id = ?`;
+            params.push(parseInt(professionalId));
         }
+        query += ` ORDER BY response_date DESC`;
 
-        query += ` ORDER BY i.created_at DESC`;
-
-        const [rows] = await pool.query<InsightRow[]>(query, params);
+        const [rows] = await pool.query<ResponseRow[]>(query, params);
         return NextResponse.json(rows);
     } catch (error) {
-        console.error('Error fetching insights:', error);
+        console.error('Error fetching responses:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch insights' },
+            { error: 'Failed to fetch responses' },
             { status: 500 }
         );
     }

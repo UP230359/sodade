@@ -1,14 +1,11 @@
+// src/app/(user)/history/page.tsx
 "use client";
 
-import MoodHistory from "@/components/mood/MoodHistory";
-import { useAppSelector } from "@/store";
-
 export default function HistoryPage() {
-  const entries = useAppSelector((state) => state.mood.entries);
-
-  return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <MoodHistory />
-    </div>
-  );
+    return (
+        <div className="p-6">
+            <h1 className="text-2xl font-bold">History</h1>
+            <p>Your check-in history will appear here.</p>
+        </div>
+    );
 }
