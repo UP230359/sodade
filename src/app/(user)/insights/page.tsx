@@ -58,8 +58,9 @@ export default function InsightsPage() {
 
     const loadInsightsFromAPI = useCallback(async () => {
         try {
+           // Dentro de loadInsightsFromAPI
             const data = await getInsights({ user_id: userId });
-            const formattedInsights = data.map((item: any) => ({
+            const formattedInsights = data.map((item: { insight_id: number; first_name?: string; content: string; created_at: string; category?: string }) => ({
                 id: String(item.insight_id),
                 type: "psychologist",
                 title: `Insight from ${item.first_name || "Professional"}`,

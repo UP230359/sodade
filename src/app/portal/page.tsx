@@ -1,14 +1,14 @@
 // src/app/portal/page.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/index";
 
 export default function PortalDashboard() {
     const insights = useSelector((state: RootState) => state.insights?.insights || []);
-    const unreadCount = insights.filter((i: any) => !i.isRead).length;
+    const unreadCount = insights.filter((i) => !i.isRead).length; // ✅ sin any
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         totalPatients: 12,
@@ -16,31 +16,31 @@ export default function PortalDashboard() {
         activeSessions: 2,
     });
 
-    const loadDashboardData = useCallback(async () => {
-        // Simular carga
-        setLoading(true);
-        try {
-            // Aquí podrías hacer fetch a la API para obtener estadísticas reales
-            await new Promise((resolve) => setTimeout(resolve, 500));
-            setStats({
-                totalPatients: 12,
-                pendingResponses: 3,
-                activeSessions: 2,
-            });
-        } catch (error) {
-            console.error('Error loading dashboard:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
     useEffect(() => {
+        const loadDashboardData = async () => {
+            setLoading(true);
+            try {
+                // Simular carga
+                await new Promise((resolve) => setTimeout(resolve, 500));
+                setStats({
+                    totalPatients: 12,
+                    pendingResponses: 3,
+                    activeSessions: 2,
+                });
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
         loadDashboardData();
-    }, [loadDashboardData]);
+    }, []);
 
     if (loading) {
         return <div className="p-6">Loading dashboard...</div>;
     }
+
+
 
     return (
         <div className="p-4 sm:p-6 md:p-8">
