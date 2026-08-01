@@ -1,7 +1,7 @@
 // app/portal/verification/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getVerificationStatus } from "@/lib/api";
 
 export default function VerificationPage() {
@@ -17,24 +17,22 @@ export default function VerificationPage() {
     const [loading, setLoading] = useState(true);
     const [userId] = useState(10); // Temporal: usuario profesional de prueba
 
-    // Hoisted to avoid "accessed before it is declared" when used in useEffect.
-    async function loadVerification() {
+    const loadVerification = useCallback(async () => {
         setLoading(true);
         try {
             const data = await getVerificationStatus(userId);
             setVerification(data as Verification);
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Error loading verification:", error);
         } finally {
             setLoading(false);
         }
-    }
+    }, [userId]);
 
-     
     useEffect(() => {
-        // Defer to avoid synchronous setState in the effect body
+        // Defer so loadVerification doesn't synchronously call setState in the effect
         Promise.resolve().then(loadVerification);
-    }, []);
+    }, [loadVerification]);
 
     if (loading) {
         return (

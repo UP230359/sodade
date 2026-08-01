@@ -14,6 +14,7 @@ export function useCheckins(userId: number | null) {
       const data = await getCheckins(userId);
       setCheckins(data);
     } catch (err) {
+      console.error('Error fetching checkins:', err);
       setError("Failed to load checkins");
     } finally {
       setLoading(false);

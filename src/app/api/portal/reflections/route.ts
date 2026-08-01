@@ -71,6 +71,8 @@ export async function PUT(request: NextRequest) {
             );
         }
 
+        console.log('Received draft_recommendation:', draft_recommendation);
+
         // Simular actualización (no modificamos checkins)
         return NextResponse.json({ 
             success: true,

@@ -22,7 +22,7 @@ export const fetchUserInsights = createAsyncThunk<
   "insights/fetchUserInsights",
   async (userId: number, { rejectWithValue }) => {
     try {
-      const insights = await getInsights({ user_id: userId });
+      const insights = await getInsights();
       return insights;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);

@@ -1,5 +1,4 @@
 // lib/api.ts
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 
 const api = axios.create({
@@ -157,6 +156,15 @@ export interface VerificationStatus {
   primary_specialty?: string;
   verification_status?: string;
   verification_date?: string;
+}
+
+export interface VerificationData {
+  user_id?: number;
+  professional_cedula?: string;
+  institution_name?: string;
+  primary_specialty?: string;
+  verification_date?: string;
+  [key: string]: any;
 }
 
 // --- Professional ---

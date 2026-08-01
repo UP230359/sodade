@@ -1,7 +1,7 @@
 // app/insights/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { AppDispatch, RootState } from "@/store/index";
 import { deleteInsightEntry, setInsights } from "@/store/insightsSlice";
@@ -57,10 +57,10 @@ export default function InsightsPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
 
-    // Hoisted function so it can be called from useEffect without being accessed before declaration.
-    async function loadInsightsFromAPI() {
+    // Stable loader using useCallback so it can be added to useEffect deps safely.
+    const loadInsightsFromAPI = useCallback(async () => {
         try {
-            const data = await getInsights({ user_id: userId });
+            const data = await getInsights({ limit: 50 });
             
             const formattedInsights = Array.isArray(data) ? data.map((item: unknown) => {
                 const row = item as Record<string, unknown>;
@@ -82,19 +82,18 @@ export default function InsightsPage() {
             } else if (insights.length === 0) {
                 dispatch(setInsights(mockInsights));
             }
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Error loading insights:", error);
             if (insights.length === 0) {
                 dispatch(setInsights(mockInsights));
             }
         }
-    }
+    }, [userId, dispatch, insights]);
 
-     
     useEffect(() => {
-        // Schedule the loader asynchronously to avoid synchronous setState inside the effect
-        Promise.resolve().then(loadInsightsFromAPI);
-    }, []);
+        // Schedule the loader asynchronously but call the stable callback directly.
+        loadInsightsFromAPI();
+    }, [loadInsightsFromAPI]);
 
     // ✅ Función para eliminar un insight - Corregida
     const handleDeleteInsight = async (id: string) => {
@@ -116,9 +115,10 @@ export default function InsightsPage() {
             await loadInsightsFromAPI();
             
             alert("✅ Insight deleted successfully");
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error deleting insight:", error);
-            setDeleteError(error.message || "Failed to delete insight. Please try again.");
+            const message = error instanceof Error ? error.message : String(error);
+            setDeleteError(message || "Failed to delete insight. Please try again.");
         } finally {
             setIsDeleting(false);
         }
@@ -136,9 +136,11 @@ export default function InsightsPage() {
         }
     };
 
-    const sortedInsights = [...displayInsights].sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
+    const sortedInsights = [...displayInsights].sort((a: any, b: any) => {
+            const ta = a.timestamp ? new Date(String(a.timestamp)).getTime() : 0;
+            const tb = b.timestamp ? new Date(String(b.timestamp)).getTime() : 0;
+            return tb - ta;
+        });
 
     if (!isClient) {
         return (
@@ -188,7 +190,7 @@ export default function InsightsPage() {
                         </div>
                     ) : (
                         <div className="divide-y divide-slate-100">
-                            {sortedInsights.map((insight) => (
+                            {sortedInsights.map((insight: any) => (
                                 <div key={insight.id} className="card-dark">
                                     <div className="flex items-start gap-3">
                                         <div className="flex-1 min-w-0">

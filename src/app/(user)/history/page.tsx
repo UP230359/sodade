@@ -1,7 +1,6 @@
 "use client";
 
 import MoodHistory from "@/components/mood/MoodHistory";
-import { useAppSelector } from "@/store";
 
 export default function HistoryPage() {
 

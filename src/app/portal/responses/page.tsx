@@ -1,9 +1,8 @@
 // app/portal/responses/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store/index";
 import { selectAllInsights } from "@/store/insightsSlice";
 import { getResponses, PsychologistResponse } from "@/lib/api";
 
@@ -23,7 +22,7 @@ export default function MyResponsesPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [professionalId] = useState(10); // user_id del profesional
-n    // Minimal shape for insights items from the store to avoid `any`
+    // Minimal shape for insights items from the store to avoid `any`
     type MinimalInsight = {
         id?: string | number;
         insight_id?: string | number;
@@ -38,38 +37,38 @@ export default function MyResponsesPage() {
     // ✅ Obtener insights de Redux
     const insights = useSelector(selectAllInsights) as MinimalInsight[];
     const sentInsights = insights.filter((i) => i.type === "psychologist");
-n    // Hoisted loader to avoid "accessed before declared" and keep effect tidy.
-    async function loadResponses() {
+
+     
+    const loadResponses = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const data = await getResponses(professionalId);
             setResponses(data);
-        } catch (err) {
-            console.error("Error loading responses:", err);
-            setError("Failed to load responses. Please try again.");
+        } catch (err: unknown) {
+            console.error('Error loading responses:', err);
+            setError('Failed to load responses. Please try again.');
         } finally {
             setLoading(false);
         }
-    }
+    }, [professionalId]);
 
-     
     useEffect(() => {
-        // Defer to avoid synchronous setState in the effect body
+        // Defer so loadResponses doesn't synchronously call setState in the effect
         Promise.resolve().then(loadResponses);
-    }, []);
+    }, [loadResponses]);
 
     // ✅ Combinar respuestas de la API con insights de Redux
     const allResponses = [
         ...responses,
-        ...sentInsights.map((insight) => ({
-            id: parseInt(String((insight as any).id || (insight as any).insight_id)) || 0,
-            reflection_id: (insight as any).checkin_id || 0,
-            user_id: (insight as any).user_id || "Unknown",
-            reflection_text: (insight as any).content?.split("\n\n")[0]?.replace("**User Reflection:**\n", "") || "",
-            insight_text: (insight as any).content || "",
-            category: ((insight as any).category || "GENERAL").toString().toUpperCase(),
-            response_date: (insight as any).timestamp || new Date().toISOString(),
+        ...sentInsights.map((insight: MinimalInsight) => ({
+            id: parseInt(String(insight.id ?? insight.insight_id ?? 0)) || 0,
+            reflection_id: insight.checkin_id ?? 0,
+            user_id: insight.user_id ?? "Unknown",
+            reflection_text: (insight.content ?? "").toString().split("\n\n")[0]?.replace("**User Reflection:**\n", "") || "",
+            insight_text: (insight.content ?? "").toString(),
+            category: (insight.category ?? "GENERAL").toString().toUpperCase(),
+            response_date: insight.timestamp ?? new Date().toISOString(),
         })),
 
     ];

@@ -3,15 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
-interface JournalEntry extends RowDataPacket {
-    entry_id: number;
-    user_id: number;
-    title: string;
-    content: string;
-    created_at: string;
-    updated_at: string;
-}
-
 // DELETE - Eliminar una entrada
 export async function DELETE(
     request: NextRequest,
