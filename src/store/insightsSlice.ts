@@ -1,6 +1,6 @@
 // store/insightsSlice.ts
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getInsights, createInsight, deleteInsight, markInsightAsRead, Insight, NewInsight } from "@/lib/api";
+import { getInsights, createInsight, deleteInsight, Insight, NewInsight } from "@/lib/api";
 
 interface InsightsState {
   insights: Insight[];
@@ -14,16 +14,15 @@ const initialState: InsightsState = {
   error: null,
 };
 
-// ✅ Asegurar que el tipo de retorno sea correcto
-export const fetchInsights = createAsyncThunk<
-  Insight[], // Tipo de retorno
-  number, // Tipo del argumento
-  { rejectValue: string } // Tipo de error
+export const fetchUserInsights = createAsyncThunk<
+  Insight[],
+  number,
+  { rejectValue: string }
 >(
-  "insights/fetchInsights",
-  async (professionalId: number, { rejectWithValue }) => {
+  "insights/fetchUserInsights",
+  async (userId: number, { rejectWithValue }) => {
     try {
-      const insights = await getInsights({ professional_id: professionalId });
+      const insights = await getInsights({ user_id: userId });
       return insights;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to fetch insights");
@@ -32,8 +31,8 @@ export const fetchInsights = createAsyncThunk<
 );
 
 export const createInsightEntry = createAsyncThunk<
-  Insight, // Tipo de retorno
-  NewInsight, // Tipo del argumento
+  Insight,
+  NewInsight,
   { rejectValue: string }
 >(
   "insights/createInsight",
@@ -43,22 +42,6 @@ export const createInsightEntry = createAsyncThunk<
       return result.insight;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to create insight");
-    }
-  }
-);
-
-export const markInsightAsReadThunk = createAsyncThunk<
-  number,
-  number,
-  { rejectValue: string }
->(
-  "insights/markAsRead",
-  async (insightId: number, { rejectWithValue }) => {
-    try {
-      await markInsightAsRead(insightId);
-      return insightId;
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to mark as read");
     }
   }
 );
@@ -83,6 +66,9 @@ const insightsSlice = createSlice({
   name: "insights",
   initialState,
   reducers: {
+    setInsights: (state, action) => {
+      state.insights = action.payload || [];
+    },
     clearInsights: (state) => {
       state.insights = [];
     },
@@ -94,22 +80,18 @@ const insightsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchInsights.pending, (state) => {
+      .addCase(fetchUserInsights.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchInsights.fulfilled, (state, action) => {
+      .addCase(fetchUserInsights.fulfilled, (state, action) => {
         state.loading = false;
         state.insights = action.payload || [];
       })
-      .addCase(fetchInsights.rejected, (state, action) => {
+      .addCase(fetchUserInsights.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to fetch insights";
         state.insights = [];
-      })
-      .addCase(createInsightEntry.pending, (state) => {
-        state.loading = true;
-        state.error = null;
       })
       .addCase(createInsightEntry.fulfilled, (state, action) => {
         state.loading = false;
@@ -121,23 +103,15 @@ const insightsSlice = createSlice({
         state.loading = false;
         state.error = action.payload || "Failed to create insight";
       })
-      .addCase(markInsightAsReadThunk.fulfilled, (state, action) => {
-        const index = (state.insights || []).findIndex((i) => i.insight_id === action.payload);
-        if (index !== -1) {
-          state.insights[index].isRead = true;
-        }
-      })
       .addCase(deleteInsightEntry.fulfilled, (state, action) => {
         state.insights = (state.insights || []).filter((i) => i.insight_id !== action.payload);
       });
   },
 });
 
-export const { clearInsights, resetInsights } = insightsSlice.actions;
+export const { setInsights, clearInsights, resetInsights } = insightsSlice.actions;
 
 export const selectAllInsights = (state: { insights: InsightsState }) => state.insights.insights || [];
-export const selectUnreadInsights = (state: { insights: InsightsState }) =>
-  (state.insights.insights || []).filter((i) => !i.isRead);
 export const selectUnreadCount = (state: { insights: InsightsState }) =>
   (state.insights.insights || []).filter((i) => !i.isRead).length;
 export const selectInsightsLoading = (state: { insights: InsightsState }) => state.insights.loading || false;

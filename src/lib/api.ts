@@ -7,9 +7,32 @@ const api = axios.create({
 });
 
 // ============================================
-// TIPOS EXISTENTES
+// TIPOS
 // ============================================
 
+// --- Journal ---
+export interface Journal {
+  entry_id: number;
+  user_id: number;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NewJournal {
+  user_id: number;
+  title: string;
+  content: string;
+}
+
+export interface UpdateJournal {
+  entry_id: number;
+  title?: string;
+  content?: string;
+}
+
+// --- Checkins ---
 export interface Checkin {
   checkin_id: number;
   emotion: string;
@@ -26,47 +49,6 @@ export interface NewCheckin {
   influences?: string[];
 }
 
-export interface Journal {
-  entry_id: number;
-  user_id: number;
-  title: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface NewJournal {
-  userId: number;
-  title: string;
-  content: string;
-}
-
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-}
-
-export interface AuthResponse {
-  user: User;
-  token: string;
-}
-
-export interface LoginCredentials {
-  email: string;
-  password_hash: string;
-}
-
-export interface RegisterCredentials {
-  name: string;
-  email: string;
-  password_hash: string;
-}
-
-// ============================================
-// NUEVOS TIPOS PARA INSIGHTS Y PORTAL
-// ============================================
-
 // --- Insights ---
 export interface Insight {
   insight_id: number;
@@ -75,7 +57,6 @@ export interface Insight {
   tag_id: number | null;
   content: string;
   created_at: string;
-  // Campos extendidos para UI
   title?: string;
   preview?: string;
   category?: string;
@@ -95,6 +76,30 @@ export interface NewInsight {
 export interface Tag {
   tag_id: number;
   name: string;
+}
+
+// --- Users ---
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  created_at?: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+}
+
+export interface LoginCredentials {
+  email: string;
+  password_hash: string;
+}
+
+export interface RegisterCredentials {
+  name: string;
+  email: string;
+  password_hash: string;
 }
 
 // --- Reflections (Community Needs) ---
@@ -123,9 +128,30 @@ export interface PsychologistResponse {
 
 // --- Verification ---
 export interface VerificationStatus {
+    verified: boolean;
+    user_id?: number;
+    professional_cedula?: string;
+    institution_name?: string;
+    primary_specialty?: string;
+    verification_status?: string;
+    verification_date?: string;
+}
+
+export interface VerificationStatus {
   verified: boolean;
   professional_id?: number;
   user_id?: number;
+  fullName?: string;
+  licenseNumber?: string;
+  specialty?: string;
+  yearsExperience?: number;
+  clinicName?: string;
+  clinicAddress?: string;
+  phoneNumber?: string;
+  email?: string;
+  bio?: string;
+  status?: string;
+  verificationDate?: string;
   institution_name?: string;
   primary_specialty?: string;
   verification_status?: string;
@@ -143,7 +169,40 @@ export interface Professional {
 }
 
 // ============================================
-// FUNCIONES EXISTENTES
+// JOURNAL API
+// ============================================
+
+export const getJournals = async (userId: number): Promise<Journal[]> => {
+  const { data } = await api.get("/journal", { params: { user_id: userId } });
+  return data;
+};
+
+export const getJournalById = async (entryId: number): Promise<Journal> => {
+  const { data } = await api.get(`/journal/${entryId}`);
+  return data;
+};
+
+export const createJournal = async (journal: NewJournal): Promise<{ entry: Journal; entry_id: number }> => {
+  const { data } = await api.post("/journal", journal);
+  return data;
+};
+
+export const updateJournal = async (
+  entryId: number,
+  data: { title?: string; content?: string }
+): Promise<{ success: boolean; entry: Journal }> => {
+  const { data: response } = await api.put(`/journal/${entryId}`, data);
+  return response;
+};
+
+export const deleteJournal = async (entryId: number): Promise<{ success: boolean }> => {
+    console.log('📤 deleteJournal - ID:', entryId);
+    const { data } = await api.delete(`/journal/${entryId}`);
+    return data;
+};
+
+// ============================================
+// CHECKINS API
 // ============================================
 
 export const getCheckins = async (userId: number): Promise<Checkin[]> => {
@@ -151,41 +210,31 @@ export const getCheckins = async (userId: number): Promise<Checkin[]> => {
   return data;
 };
 
-export const createCheckin = async (
-  checkin: NewCheckin,
-): Promise<{ checkinId: number }> => {
+export const getCheckinById = async (checkinId: number): Promise<Checkin> => {
+  const { data } = await api.get(`/checkins/${checkinId}`);
+  return data;
+};
+
+export const createCheckin = async (checkin: NewCheckin): Promise<{ checkinId: number }> => {
   const { data } = await api.post("/checkins", checkin);
   return data;
 };
 
-export const getJournals = async (userId: number): Promise<Journal[]> => {
-  const { data } = await api.get("/journal", { params: { userId } });
-  return data;
+export const updateCheckin = async (
+  checkinId: number,
+  data: { note?: string; shared_anonymously?: boolean }
+): Promise<{ success: boolean }> => {
+  const { data: response } = await api.put(`/checkins/${checkinId}`, data);
+  return response;
 };
 
-export const createJournal = async (
-  journal: NewJournal,
-): Promise<{ entry_id: number }> => {
-  const { data } = await api.post("/journal", journal);
-  return data;
-};
-
-export const loginUser = async (
-  credentials: LoginCredentials,
-): Promise<AuthResponse> => {
-  const { data } = await api.post("/auth/login", credentials);
-  return data;
-};
-
-export const registerUser = async (
-  credentials: RegisterCredentials,
-): Promise<AuthResponse> => {
-  const { data } = await api.post("/auth/register", credentials);
+export const deleteCheckin = async (checkinId: number): Promise<{ success: boolean }> => {
+  const { data } = await api.delete(`/checkins/${checkinId}`);
   return data;
 };
 
 // ============================================
-// NUEVAS FUNCIONES PARA INSIGHTS
+// INSIGHTS API
 // ============================================
 
 export const getInsights = async (params?: {
@@ -225,82 +274,126 @@ export const markInsightAsRead = async (insightId: number): Promise<{ success: b
   return data;
 };
 
+export const markAllInsightsAsRead = async (professionalId: number): Promise<{ success: boolean }> => {
+  const { data } = await api.put("/insights/read-all", { professional_id: professionalId });
+  return data;
+};
+
 // ============================================
-// NUEVAS FUNCIONES PARA TAGS
+// TAGS API - Ruta actualizada a /portal/tags
 // ============================================
 
 export const getTags = async (): Promise<Tag[]> => {
-  const { data } = await api.get("/tags");
+  const { data } = await api.get("/portal/tags");
   return data;
 };
 
 export const createTag = async (name: string): Promise<{ tag_id: number }> => {
-  const { data } = await api.post("/tags", { name });
+  const { data } = await api.post("/portal/tags", { name });
   return data;
 };
 
 // ============================================
-// NUEVAS FUNCIONES PARA REFLECTIONS (Community Needs)
+// REFLECTIONS API - Ruta actualizada a /portal/reflections
 // ============================================
-
 export const getReflections = async (params?: {
-  category?: string;
+  category?: string;  // emotion_id
   sort?: "ASC" | "DESC";
 }): Promise<Reflection[]> => {
-  const { data } = await api.get("/reflections", { params });
-  return data;
+  const { data } = await api.get("/portal/reflections", { 
+    params: { 
+      emotion_id: params?.category,
+      sort: params?.sort 
+    } 
+  });
+  return data.map((item: any) => ({
+    ...item,
+    category: mapEmotionIdToCategory(item.category)
+  }));
+};
+const mapEmotionIdToCategory = (emotionId: number): string => {
+  const emotionMap: { [key: number]: string } = {
+    1: 'anxiety',
+    2: 'sadness',
+    3: 'stress',
+    4: 'anger',
+    5: 'calm',
+  };
+  return emotionMap[emotionId] || 'unknown';
 };
 
 export const updateReflection = async (
   reflectionId: number,
   data: { draft_recommendation?: string; tag?: string; status?: string }
 ): Promise<{ success: boolean }> => {
-  const { data: response } = await api.put(`/reflections/${reflectionId}`, data);
+  // Guardar la nota en el checkin
+  const { data: response } = await api.put(`/portal/reflections`, {
+    id: reflectionId,
+    draft_recommendation: data.draft_recommendation,
+    tag: data.tag,
+    status: data.status,
+  });
   return response;
 };
 
 // ============================================
-// NUEVAS FUNCIONES PARA RESPONSES (My Responses)
+// RESPONSES API - Ruta actualizada a /portal/responses
 // ============================================
 
-export const getResponses = async (professionalId: number): Promise<PsychologistResponse[]> => {
-  const { data } = await api.get("/responses", { params: { professional_id: professionalId } });
+export const getResponses = async (professionalId?: number): Promise<PsychologistResponse[]> => {
+  const { data } = await api.get("/portal/responses", { 
+    params: { professional_id: professionalId } 
+  });
+  return data;
+};
+
+export const getResponseById = async (responseId: number): Promise<PsychologistResponse> => {
+  const { data } = await api.get(`/portal/responses/${responseId}`);
   return data;
 };
 
 // ============================================
-// NUEVAS FUNCIONES PARA VERIFICATION
+// VERIFICATION API - Ruta actualizada a /portal/verify
 // ============================================
 
-export const getVerificationStatus = async (userId: number): Promise<VerificationStatus> => {
-  const { data } = await api.get("/verification", { params: { user_id: userId } });
+export const getVerificationStatus = async (userId?: number): Promise<VerificationStatus> => {
+  const { data } = await api.get("/portal/verify", { 
+    params: { user_id: userId } 
+  });
+  return data;
+};
+
+export const submitVerification = async (verificationData: VerificationData): Promise<{ success: boolean; id: number; message: string }> => {
+  const { data } = await api.post("/portal/verify", verificationData);
   return data;
 };
 
 export const getProfessionalById = async (professionalId: number): Promise<Professional> => {
-  const { data } = await api.get(`/professionals/${professionalId}`);
+  const { data } = await api.get(`/portal/professionals/${professionalId}`);
   return data;
 };
 
 // ============================================
-// NUEVAS FUNCIONES PARA JOURNAL (completas)
+// AUTH API
 // ============================================
 
-export const getJournalById = async (entryId: number): Promise<Journal> => {
-  const { data } = await api.get(`/journal/${entryId}`);
+export const loginUser = async (credentials: LoginCredentials): Promise<AuthResponse> => {
+  const { data } = await api.post("/auth/login", credentials);
   return data;
 };
 
-export const updateJournal = async (
-  entryId: number,
-  data: { title?: string; content?: string }
-): Promise<{ success: boolean; entry: Journal }> => {
-  const { data: response } = await api.put(`/journal/${entryId}`, data);
-  return response;
+export const registerUser = async (credentials: RegisterCredentials): Promise<AuthResponse> => {
+  const { data } = await api.post("/auth/register", credentials);
+  return data;
 };
 
-export const deleteJournal = async (entryId: number): Promise<{ success: boolean }> => {
-  const { data } = await api.delete(`/journal/${entryId}`);
+export const logoutUser = async (): Promise<{ success: boolean }> => {
+  const { data } = await api.post("/auth/logout");
+  return data;
+};
+
+export const getCurrentUser = async (): Promise<User> => {
+  const { data } = await api.get("/auth/me");
   return data;
 };
 
@@ -318,7 +411,9 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
 api.interceptors.response.use(
@@ -334,5 +429,8 @@ api.interceptors.response.use(
   }
 );
 
-export default api;
+// ============================================
+// EXPORT DEFAULT
+// ============================================
 
+export default api;

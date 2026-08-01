@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/index";
+import { selectAllInsights } from "@/store/insightsSlice";
 import { getResponses, PsychologistResponse } from "@/lib/api";
 
 // --- Helper Functions ---
@@ -21,8 +22,10 @@ export default function MyResponsesPage() {
     const [responses, setResponses] = useState<PsychologistResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [professionalId] = useState(1); // TODO: Obtener del usuario logueado
-    const insights = useSelector((state: RootState) => state.insights?.insights || []);
+    const [professionalId] = useState(10); // user_id del profesional
+
+    // ✅ Obtener insights de Redux
+    const insights = useSelector(selectAllInsights);
     const sentInsights = insights.filter((i: any) => i.type === "psychologist");
 
     useEffect(() => {
@@ -43,19 +46,23 @@ export default function MyResponsesPage() {
         }
     };
 
-    // Combinar respuestas de la API con insights de Redux
+    // ✅ Combinar respuestas de la API con insights de Redux
     const allResponses = [
         ...responses,
         ...sentInsights.map((insight: any) => ({
-            id: parseInt(`1000${insight.insight_id || insight.id}`),
-            reflection_id: 0,
-            user_id: insight.title?.replace("Response to User ", "") || "Unknown",
+            id: parseInt(insight.id || insight.insight_id) || 0,
+            reflection_id: insight.checkin_id || 0,
+            user_id: insight.user_id || "Unknown",
             reflection_text: insight.content?.split("\n\n")[0]?.replace("**User Reflection:**\n", "") || "",
-            insight_text: insight.content?.split("\n\n")[1]?.replace("**Psychologist Response:**\n", "") || "",
+            insight_text: insight.content || "",
             category: insight.category?.toUpperCase() || "GENERAL",
             response_date: insight.timestamp || new Date().toISOString(),
         })),
     ];
+
+    console.log('📊 Total responses:', allResponses.length);
+    console.log('📊 From API:', responses.length);
+    console.log('📊 From Insights:', sentInsights.length);
 
     if (loading) {
         return (

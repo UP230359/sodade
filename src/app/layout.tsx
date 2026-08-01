@@ -1,9 +1,7 @@
+// app/layout.tsx (layout principal sin sidebar)
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Navbar from "@/components/layout/Navbar";
-import Sidebar from "@/components/layout/Sidebar";
-import Footer from "@/components/layout/Footer";
-import Providers from "@/store/Providers";
+import  Providers  from "../store/Providers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,14 +28,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full bg-[#FFFFFF]">
         <Providers>
-          <Navbar />
-          <div className="flex flex-1">
-            <Sidebar />
-            <main className="flex-1 p-6">{children}</main>
-          </div>
-          <Footer />
+          {children}
         </Providers>
       </body>
     </html>
