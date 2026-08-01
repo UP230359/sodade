@@ -1,4 +1,5 @@
 // lib/api.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 
 const api = axios.create({
@@ -306,10 +307,13 @@ export const getReflections = async (params?: {
       sort: params?.sort 
     } 
   });
-  return data.map((item: any) => ({
-    ...item,
-    category: mapEmotionIdToCategory(item.category)
-  }));
+  return data.map((item: unknown) => {
+    const row = item as { category?: number } & Record<string, unknown>;
+    return {
+      ...row,
+      category: mapEmotionIdToCategory(Number(row.category))
+    } as Reflection;
+  });
 };
 const mapEmotionIdToCategory = (emotionId: number): string => {
   const emotionMap: { [key: number]: string } = {

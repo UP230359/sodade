@@ -2,13 +2,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { getJournals, createJournal, updateJournal, deleteJournal, Journal } from "@/lib/api";
 
-// --- Types ---
-export interface JournalEntry extends Journal {
-    // Podemos extender si es necesario
-}
-
 interface JournalState {
-    entries: JournalEntry[];
+    entries: Journal[];
     loading: boolean;
     error: string | null;
     lastFetched: string | null;
@@ -26,7 +21,7 @@ const initialState: JournalState = {
 
 // Obtener todas las entradas de un usuario
 export const fetchJournalEntries = createAsyncThunk<
-    JournalEntry[], // tipo de retorno
+    Journal[], // tipo de retorno
     number,          // argumento (userId)
     { rejectValue: string }
 >(
@@ -37,16 +32,17 @@ export const fetchJournalEntries = createAsyncThunk<
             const entries = await getJournals(userId);
             console.log('✅ fetchJournalEntries - entries:', entries.length);
             return entries;
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('❌ fetchJournalEntries - Error:', error);
-            return rejectWithValue(error.message || "Failed to fetch journal entries");
+            const message = error instanceof Error ? error.message : String(error);
+            return rejectWithValue(message || "Failed to fetch journal entries");
         }
     }
 );
 
 // Crear una nueva entrada
 export const createJournalEntry = createAsyncThunk<
-    JournalEntry,
+    Journal,
     { user_id: number; title: string; content: string },
     { rejectValue: string }
 >(
@@ -57,16 +53,17 @@ export const createJournalEntry = createAsyncThunk<
             const result = await createJournal(data);
             console.log('✅ createJournalEntry - result:', result);
             return result.entry;
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('❌ createJournalEntry - Error:', error);
-            return rejectWithValue(error.message || "Failed to create journal entry");
+            const message = error instanceof Error ? error.message : String(error);
+            return rejectWithValue(message || "Failed to create journal entry");
         }
     }
 );
 
 // Actualizar una entrada existente
 export const updateJournalEntry = createAsyncThunk<
-    JournalEntry,
+    Journal,
     { entry_id: number; title?: string; content?: string },
     { rejectValue: string }
 >(
@@ -77,9 +74,10 @@ export const updateJournalEntry = createAsyncThunk<
             const result = await updateJournal(entry_id, { title, content });
             console.log('✅ updateJournalEntry - result:', result);
             return result.entry;
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('❌ updateJournalEntry - Error:', error);
-            return rejectWithValue(error.message || "Failed to update journal entry");
+            const message = error instanceof Error ? error.message : String(error);
+            return rejectWithValue(message || "Failed to update journal entry");
         }
     }
 );
@@ -97,9 +95,10 @@ export const deleteJournalEntry = createAsyncThunk<
             await deleteJournal(entry_id);
             console.log('✅ deleteJournalEntry - eliminado:', entry_id);
             return entry_id;
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('❌ deleteJournalEntry - Error:', error);
-            return rejectWithValue(error.message || "Failed to delete journal entry");
+            const message = error instanceof Error ? error.message : String(error);
+            return rejectWithValue(message || "Failed to delete journal entry");
         }
     }
 );
@@ -121,7 +120,7 @@ const journalSlice = createSlice({
             state.entries = [];
         },
         // Reducer para establecer entradas manualmente
-        setJournalEntries: (state, action: PayloadAction<JournalEntry[]>) => {
+        setJournalEntries: (state, action: PayloadAction<Journal[]>) => {
             state.entries = action.payload || [];
             state.lastFetched = new Date().toISOString();
         },

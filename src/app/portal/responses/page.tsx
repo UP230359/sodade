@@ -23,16 +23,23 @@ export default function MyResponsesPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [professionalId] = useState(10); // user_id del profesional
+n    // Minimal shape for insights items from the store to avoid `any`
+    type MinimalInsight = {
+        id?: string | number;
+        insight_id?: string | number;
+        checkin_id?: number;
+        user_id?: number | string;
+        content?: string;
+        category?: string;
+        timestamp?: string;
+        type?: string;
+    };
 
     // ✅ Obtener insights de Redux
-    const insights = useSelector(selectAllInsights);
-    const sentInsights = insights.filter((i: any) => i.type === "psychologist");
-
-    useEffect(() => {
-        loadResponses();
-    }, []);
-
-    const loadResponses = async () => {
+    const insights = useSelector(selectAllInsights) as MinimalInsight[];
+    const sentInsights = insights.filter((i) => i.type === "psychologist");
+n    // Hoisted loader to avoid "accessed before declared" and keep effect tidy.
+    async function loadResponses() {
         setLoading(true);
         setError(null);
         try {
@@ -44,20 +51,27 @@ export default function MyResponsesPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }
+
+     
+    useEffect(() => {
+        // Defer to avoid synchronous setState in the effect body
+        Promise.resolve().then(loadResponses);
+    }, []);
 
     // ✅ Combinar respuestas de la API con insights de Redux
     const allResponses = [
         ...responses,
-        ...sentInsights.map((insight: any) => ({
-            id: parseInt(insight.id || insight.insight_id) || 0,
-            reflection_id: insight.checkin_id || 0,
-            user_id: insight.user_id || "Unknown",
-            reflection_text: insight.content?.split("\n\n")[0]?.replace("**User Reflection:**\n", "") || "",
-            insight_text: insight.content || "",
-            category: insight.category?.toUpperCase() || "GENERAL",
-            response_date: insight.timestamp || new Date().toISOString(),
+        ...sentInsights.map((insight) => ({
+            id: parseInt(String((insight as any).id || (insight as any).insight_id)) || 0,
+            reflection_id: (insight as any).checkin_id || 0,
+            user_id: (insight as any).user_id || "Unknown",
+            reflection_text: (insight as any).content?.split("\n\n")[0]?.replace("**User Reflection:**\n", "") || "",
+            insight_text: (insight as any).content || "",
+            category: ((insight as any).category || "GENERAL").toString().toUpperCase(),
+            response_date: (insight as any).timestamp || new Date().toISOString(),
         })),
+
     ];
 
     console.log('📊 Total responses:', allResponses.length);

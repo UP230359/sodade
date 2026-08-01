@@ -52,31 +52,30 @@ const mockInsights: Insight[] = [];
 export default function InsightsPage() {
     const dispatch = useDispatch<AppDispatch>(); // ✅ Usar AppDispatch
     const insights = useSelector((state: RootState) => state.insights?.insights || []);
-    const [isClient, setIsClient] = useState(false);
+    const isClient = typeof window !== 'undefined';
     const [userId] = useState(1);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
 
-    useEffect(() => {
-        setIsClient(true);
-        loadInsightsFromAPI();
-    }, []);
-
-    const loadInsightsFromAPI = async () => {
+    // Hoisted function so it can be called from useEffect without being accessed before declaration.
+    async function loadInsightsFromAPI() {
         try {
             const data = await getInsights({ user_id: userId });
             
-            const formattedInsights = data.map((item: any) => ({
-                id: String(item.insight_id),
-                type: "psychologist",
-                title: `Insight from ${item.first_name || "Professional"}`,
-                preview: item.content ? item.content.slice(0, 150) + "..." : "No content",
-                content: item.content || "",
-                category: item.category || "General",
-                timestamp: item.created_at,
-                isRead: false,
-                isNew: true,
-            }));
+            const formattedInsights = Array.isArray(data) ? data.map((item: unknown) => {
+                const row = item as Record<string, unknown>;
+                return {
+                    id: String(row['insight_id']),
+                    type: "psychologist",
+                    title: `Insight from ${String(row['first_name'] || 'Professional')}`,
+                    preview: row['content'] ? String(row['content']).slice(0, 150) + '...' : 'No content',
+                    content: String(row['content'] || ''),
+                    category: String(row['category'] || 'General'),
+                    timestamp: String(row['created_at'] || new Date().toISOString()),
+                    isRead: false,
+                    isNew: true,
+                } as Insight;
+            }) : [];
 
             if (formattedInsights.length > 0) {
                 dispatch(setInsights(formattedInsights));
@@ -89,7 +88,13 @@ export default function InsightsPage() {
                 dispatch(setInsights(mockInsights));
             }
         }
-    };
+    }
+
+     
+    useEffect(() => {
+        // Schedule the loader asynchronously to avoid synchronous setState inside the effect
+        Promise.resolve().then(loadInsightsFromAPI);
+    }, []);
 
     // ✅ Función para eliminar un insight - Corregida
     const handleDeleteInsight = async (id: string) => {

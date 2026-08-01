@@ -24,8 +24,9 @@ export const fetchUserInsights = createAsyncThunk<
     try {
       const insights = await getInsights({ user_id: userId });
       return insights;
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to fetch insights");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      return rejectWithValue(message || "Failed to fetch insights");
     }
   }
 );
@@ -40,8 +41,9 @@ export const createInsightEntry = createAsyncThunk<
     try {
       const result = await createInsight(data);
       return result.insight;
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to create insight");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      return rejectWithValue(message || "Failed to create insight");
     }
   }
 );
@@ -56,8 +58,9 @@ export const deleteInsightEntry = createAsyncThunk<
     try {
       await deleteInsight(insightId);
       return insightId;
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to delete insight");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      return rejectWithValue(message || "Failed to delete insight");
     }
   }
 );

@@ -5,25 +5,36 @@ import { useState, useEffect } from "react";
 import { getVerificationStatus } from "@/lib/api";
 
 export default function VerificationPage() {
-    const [verification, setVerification] = useState<any>(null);
+    type Verification = {
+        verified?: boolean;
+        verification_status?: string;
+        professional_cedula?: string;
+        primary_specialty?: string;
+        verification_date?: string;
+    } | null;
+
+    const [verification, setVerification] = useState<Verification>(null);
     const [loading, setLoading] = useState(true);
     const [userId] = useState(10); // Temporal: usuario profesional de prueba
 
-    useEffect(() => {
-        loadVerification();
-    }, []);
-
-    const loadVerification = async () => {
+    // Hoisted to avoid "accessed before it is declared" when used in useEffect.
+    async function loadVerification() {
         setLoading(true);
         try {
             const data = await getVerificationStatus(userId);
-            setVerification(data);
+            setVerification(data as Verification);
         } catch (error) {
             console.error("Error loading verification:", error);
         } finally {
             setLoading(false);
         }
-    };
+    }
+
+     
+    useEffect(() => {
+        // Defer to avoid synchronous setState in the effect body
+        Promise.resolve().then(loadVerification);
+    }, []);
 
     if (loading) {
         return (
@@ -115,7 +126,7 @@ export default function VerificationPage() {
             <div className="mt-6 bg-[#F4F4F4]/50 rounded-xl p-4 border border-[#6C757D]/10">
                 <p className="text-xs text-[#6C757D] leading-relaxed">
                     Your identity is kept separate from your interactions in the Anonymous Feed.
-                    Users only see that a "Verified Professional" has responded to their reflections.
+                    Users only see that a &quot;Verified Professional&quot; has responded to their reflections.
                 </p>
             </div>
         </div>

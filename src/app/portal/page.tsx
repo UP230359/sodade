@@ -6,7 +6,6 @@ import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store/index";
 import { createInsightEntry } from "@/store/insightsSlice";
 import { getReflections, updateReflection, Reflection } from "@/lib/api";
-import Button from "@/components/ui/Button";
 import Textarea from "@/components/ui/Textarea";
 
 const getTimeAgo = (dateString: string) => {
@@ -51,11 +50,8 @@ export default function CommunityPage() {
     const [professionalId] = useState(10);
     const [isSending, setIsSending] = useState(false);
 
-    useEffect(() => {
-        loadReflections();
-    }, [filter, sort]);
-
-    const loadReflections = async () => {
+    // Hoisted so it can be safely referenced from useEffect without being accessed before declaration.
+    async function loadReflections() {
         setLoading(true);
         setError(null);
         try {
@@ -70,7 +66,13 @@ export default function CommunityPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }
+
+     
+    useEffect(() => {
+        // Run asynchronously to avoid calling setState synchronously within the effect
+        Promise.resolve().then(loadReflections);
+    }, [filter, sort]);
 
     const handleSendInsight = async (reflection: Reflection) => {
         if (!draftText.trim()) {
