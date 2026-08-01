@@ -1,42 +1,48 @@
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
+import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 
+// Endpoint POST /api/auth/login
+// Valida el email y password directamente contra la tabla users de MySQL.
+// No usa cookies ni tokens: solo confirma si las credenciales son correctas
+// y devuelve los datos del usuario para que el frontend los guarde en Redux.
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { email, password_hash } = body;
+    const { email, password } = await request.json();
 
-    if (!email || !password_hash) {
-      return NextResponse.json(
-        { message: "Missing required fields" },
-        { status: 400 },
-      );
+    if (!email || !password) {
+      return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
     }
 
-    const [users] = await db.execute<RowDataPacket[]>(
-      "SELECT id, name, email, password_hash as stored_hash FROM users WHERE email = ?",
+    const [rows] = await pool.execute<RowDataPacket[]>(
+      `SELECT user_id, first_name, last_name, email, password_hash, account_type
+       FROM users WHERE email = ?`,
       [email],
     );
 
-    if (users.length === 0 || users[0].stored_hash !== password_hash) {
-      return NextResponse.json(
-        { message: "Invalid credentials" },
-        { status: 401 },
-      );
+    if (rows.length === 0) {
+      return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
     }
 
-    return NextResponse.json(
-      {
-        user: { id: users[0].id, name: users[0].name, email: users[0].email },
-        token: "sodade-dummy-token",
+    const user = rows[0];
+
+    // Comparación directa de contraseñas en texto plano, sin hash
+    if (user.password_hash !== password) {
+      return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
+    }
+
+    // Credenciales correctas: se devuelve el usuario al frontend
+    return NextResponse.json({
+      user: {
+        id: user.user_id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.email,
+        accountType: user.account_type,
       },
-      { status: 200 },
-    );
+    });
   } catch (error) {
-    return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 },
-    );
+    console.error("Login error:", error);
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }

@@ -233,7 +233,7 @@ export default function MoodChart() {
         <div className="mt-8">
           {/* Título de la tabla con el número total de entradas */}
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            All Entries ({chartData.length})
+            Latest Entries ({Math.min(5, chartData.length)} of {chartData.length})  
           </h3>
           {/* Contenedor con scroll horizontal por si la tabla es muy ancha */}
           <div className="overflow-x-auto">
@@ -249,7 +249,7 @@ export default function MoodChart() {
               </thead>
               <tbody>
                 {/* Invertimos los datos para mostrar lo más reciente primero */}
-                {chartData.slice().reverse().map((entry, idx) => (
+                {chartData.slice().reverse().slice(0, 5).map((entry, idx) => (
                   <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
                     {/* Fecha de la entrada */}
                     <td className="py-2 px-3 text-gray-700">{entry.date}</td>
