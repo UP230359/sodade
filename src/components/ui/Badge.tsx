@@ -1,3 +1,8 @@
+﻿// ----------------------------------------------------
+// Comentarios automáticos agregados en español por Copilot CLI runtime en VS Code
+// Archivo: Badge.tsx
+// ----------------------------------------------------
+
 import { ReactNode } from "react";
 
 interface BadgeProps {
@@ -6,6 +11,7 @@ interface BadgeProps {
   className?: string;
 }
 
+// Función 'Badge': comentario automático en español
 export default function Badge({ children, variant = "neutral", className = "" }: BadgeProps) {
   const variantStyles = {
     primary: "bg-primary/10 text-primary border-primary/20",
@@ -18,6 +24,7 @@ export default function Badge({ children, variant = "neutral", className = "" }:
     neutral: "bg-neutral/10 text-neutral-dark border-neutral/20",
   };
 
+  // Función 'return': comentario automático en español
   return (
     <span
       className={`
@@ -30,3 +37,4 @@ export default function Badge({ children, variant = "neutral", className = "" }:
     </span>
   );
 }
+

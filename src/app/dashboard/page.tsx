@@ -1,12 +1,20 @@
+﻿// ----------------------------------------------------
+// Comentarios automáticos agregados en español por Copilot CLI runtime en VS Code
+// Archivo: page.tsx
+// ----------------------------------------------------
+
 "use client";
 
 import { useAppSelector } from "@/store";
 
+// Función 'DashboardPage': comentario automático en español
 export default function DashboardPage() {
   // Verifying the Redux connection is active
   const moodState = useAppSelector((state) => state.mood);
+  // Función 'useAppSelector': comentario automático en español
   const userState = useAppSelector((state) => state.user);
 
+  // Función 'return': comentario automático en español
   return (
     <div className="min-h-screen bg-[#FCFBF9] p-8 font-sans">
       <div className="max-w-5xl mx-auto space-y-6">
@@ -21,6 +29,7 @@ export default function DashboardPage() {
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="text-xs font-bold text-gray-500 mb-2">Mood State</h3>
               <pre className="text-xs text-gray-700 overflow-auto">
+                // Función 'stringify': comentario automático en español
                 {JSON.stringify(moodState, null, 2)}
               </pre>
             </div>
@@ -28,6 +37,7 @@ export default function DashboardPage() {
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="text-xs font-bold text-gray-500 mb-2">User State</h3>
               <pre className="text-xs text-gray-700 overflow-auto">
+                // Función 'stringify': comentario automático en español
                 {JSON.stringify(userState, null, 2)}
               </pre>
             </div>
@@ -38,3 +48,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

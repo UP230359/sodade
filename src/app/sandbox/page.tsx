@@ -1,3 +1,8 @@
+﻿// ----------------------------------------------------
+// Comentarios automáticos agregados en español por Copilot CLI runtime en VS Code
+// Archivo: page.tsx
+// ----------------------------------------------------
+
 "use client";
 
 import { useState } from "react";
@@ -9,7 +14,9 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 
+// Función 'SandboxPage': comentario automático en español
 export default function SandboxPage() {
+  // Función 'useState': comentario automático en español
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const selectOptions = [
@@ -18,6 +25,7 @@ export default function SandboxPage() {
     { value: "psychiatry", label: "Psychiatry" },
   ];
 
+  // Función 'return': comentario automático en español
   return (
     <div className="min-h-screen bg-muted/20 p-8 font-sans">
       <div className="max-w-4xl mx-auto space-y-8">
@@ -25,6 +33,7 @@ export default function SandboxPage() {
 
         <Card>
           <h2 className="text-xl font-semibold mb-4 text-foreground">Modals</h2>
+          // Función 'alert': comentario automático en español
           <Button variant="primary" onClick={() => alert("JavaScript is working!")}>
             Open Sandbox Modal
           </Button>
@@ -94,6 +103,7 @@ export default function SandboxPage() {
 
         <Card>
           <h2 className="text-xl font-semibold mb-4 text-foreground">Modals</h2>
+          // Función 'setIsModalOpen': comentario automático en español
           <Button variant="primary" onClick={() => setIsModalOpen(true)}>
             Open Sandbox Modal
           </Button>
@@ -103,6 +113,7 @@ export default function SandboxPage() {
 
       <Modal
         isOpen={isModalOpen}
+        // Función 'setIsModalOpen': comentario automático en español
         onClose={() => setIsModalOpen(false)}
         title="Sandbox Modal"
       >
@@ -110,7 +121,9 @@ export default function SandboxPage() {
           This is a test modal to ensure the overlay, backdrop blur, and escape key event listeners are working properly.
         </p>
         <div className="flex justify-end gap-3">
+          // Función 'setIsModalOpen': comentario automático en español
           <Button variant="neutral" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+          // Función 'setIsModalOpen': comentario automático en español
           <Button variant="primary" onClick={() => setIsModalOpen(false)}>Confirm</Button>
         </div>
       </Modal>
@@ -118,3 +131,4 @@ export default function SandboxPage() {
     </div>
   );
 }
+

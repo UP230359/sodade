@@ -1,8 +1,15 @@
+﻿// ----------------------------------------------------
+// Comentarios automáticos agregados en español por Copilot CLI runtime en VS Code
+// Archivo: Textarea.tsx
+// ----------------------------------------------------
+
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
 }
 
+// Función 'Textarea': comentario automático en español
 export default function Textarea({ label, className = "", ...props }: TextareaProps) {
+  // Función 'return': comentario automático en español
   return (
     <div className="flex flex-col gap-1.5 w-full">
       {label && <label className="text-sm font-medium text-secondary">{label}</label>}
@@ -19,3 +26,4 @@ export default function Textarea({ label, className = "", ...props }: TextareaPr
     </div>
   );
 }
+

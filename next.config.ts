@@ -1,3 +1,8 @@
+﻿// ----------------------------------------------------
+// Comentarios automáticos agregados en español por Copilot CLI runtime en VS Code
+// Archivo: next.config.ts
+// ----------------------------------------------------
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -6,3 +11,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+

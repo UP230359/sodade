@@ -1,3 +1,8 @@
+﻿// ----------------------------------------------------
+// Comentarios automáticos agregados en español por Copilot CLI runtime en VS Code
+// Archivo: Select.tsx
+// ----------------------------------------------------
+
 interface SelectOption {
   value: string;
   label: string;
@@ -8,7 +13,9 @@ interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>
   options: SelectOption[];
 }
 
+// Función 'Select': comentario automático en español
 export default function Select({ label, options, className = "", ...props }: SelectProps) {
+  // Función 'return': comentario automático en español
   return (
     <div className="flex flex-col gap-1.5 w-full">
       {label && <label className="text-sm font-medium text-secondary">{label}</label>}
@@ -22,6 +29,7 @@ export default function Select({ label, options, className = "", ...props }: Sel
         `}
         {...props}
       >
+        // Función 'map': comentario automático en español
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {opt.label}
@@ -31,3 +39,4 @@ export default function Select({ label, options, className = "", ...props }: Sel
     </div>
   );
 }
+

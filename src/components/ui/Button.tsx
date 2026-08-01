@@ -1,3 +1,8 @@
+﻿// ----------------------------------------------------
+// Comentarios automáticos agregados en español por Copilot CLI runtime en VS Code
+// Archivo: Button.tsx
+// ----------------------------------------------------
+
 "use client";
 
 import { ReactNode } from "react";
@@ -8,6 +13,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   fullWidth?: boolean;
 }
 
+// Función 'Button': comentario automático en español
 export default function Button({
   children,
   variant = "primary",
@@ -27,6 +33,7 @@ export default function Button({
     neutral: "bg-neutral text-slate-900 hover:bg-neutral/90",
   };
 
+  // Función 'return': comentario automático en español
   return (
     <button
       className={`
@@ -42,3 +49,4 @@ export default function Button({
     </button>
   );
 }
+

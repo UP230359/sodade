@@ -1,3 +1,8 @@
+﻿// ----------------------------------------------------
+// Comentarios automáticos agregados en español por Copilot CLI runtime en VS Code
+// Archivo: SummaryCard.tsx
+// ----------------------------------------------------
+
 import { ReactNode } from "react";
 
 interface SummaryCardProps {
@@ -8,6 +13,7 @@ interface SummaryCardProps {
   children?: ReactNode;
 }
 
+// Función 'SummaryCard': comentario automático en español
 export default function SummaryCard({
   title,
   value,
@@ -25,6 +31,7 @@ export default function SummaryCard({
     neutral: "bg-neutral/10 border-neutral/30 text-neutral-dark",
   }[moodAccent] : "bg-muted/30 border-neutral/10";
 
+  // Función 'return': comentario automático en español
   return (
     <div className={`p-6 rounded-2xl border transition-all ${accentStyles}`}>
       <span className="text-xs uppercase tracking-wider font-semibold opacity-70">{title}</span>
@@ -34,3 +41,4 @@ export default function SummaryCard({
     </div>
   );
 }
+
