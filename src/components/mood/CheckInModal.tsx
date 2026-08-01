@@ -7,7 +7,7 @@ import Button from "@/components/ui/Button";
 interface CheckInModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (data: any) => void;
+    onSave: (data: { emotion: string; note: string }) => void;
 }
 
 export default function CheckInModal({ isOpen, onClose, onSave }: CheckInModalProps) {
