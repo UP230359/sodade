@@ -1,5 +1,6 @@
 import axios from "axios";
 
+// Cliente axios centralizado para todas las llamadas al backend
 const api = axios.create({
   baseURL: "/api",
   headers: { "Content-Type": "application/json" },
@@ -11,6 +12,7 @@ export interface Checkin {
   note: string | null;
   shared_anonymously: boolean;
   created_at: string;
+  tags: string | null;
 }
 
 export interface NewCheckin {
@@ -36,26 +38,30 @@ export interface NewJournal {
   content: string;
 }
 
+// Representa al usuario autenticado, con los campos reales de la tabla users
 export interface User {
   id: number;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
+  accountType: "personal" | "professional";
 }
 
-export interface AuthResponse {
-  user: User;
-  token: string;
-}
-
+// Datos que se mandan al hacer login: email y password en texto plano
 export interface LoginCredentials {
   email: string;
-  password_hash: string;
+  password: string;
 }
 
 export interface RegisterCredentials {
   name: string;
   email: string;
   password_hash: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
 }
 
 export const getCheckins = async (userId: number): Promise<Checkin[]> => {
@@ -82,9 +88,11 @@ export const createJournal = async (
   return data;
 };
 
+// Login: envía email/password al backend, valida contra MySQL
+// y devuelve solo el usuario (sin token, ya que no hay sesión persistente)
 export const loginUser = async (
   credentials: LoginCredentials,
-): Promise<AuthResponse> => {
+): Promise<{ user: User }> => {
   const { data } = await api.post("/auth/login", credentials);
   return data;
 };

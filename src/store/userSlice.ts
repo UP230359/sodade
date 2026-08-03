@@ -10,6 +10,7 @@ export interface User {
   cedula?: string;
   name?: string; // Supporting contribution's dummy format
 }
+import { User } from "@/lib/api";
 
 interface UserState {
   user: User | null;
@@ -52,4 +53,19 @@ const userSlice = createSlice({
 });
 
 export const { setUser, login, setOnboarded, logout } = userSlice.actions;
+export default userSlice.reducer;
+    // Guarda al usuario autenticado en el estado global después de un login exitoso
+    setUser: (state, action: PayloadAction<User | null>) => {
+      state.user = action.payload;
+      state.isAuthenticated = !!action.payload;
+    },
+    // Limpia el estado del usuario al cerrar sesión
+    logout: (state) => {
+      state.user = null;
+      state.isAuthenticated = false;
+    },
+  },
+});
+
+export const { setUser, logout } = userSlice.actions;
 export default userSlice.reducer;
