@@ -18,6 +18,7 @@ export async function GET(
     }
     return NextResponse.json(rows[0]);
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: "Database error" }, { status: 500 });
   }
 }
@@ -34,6 +35,7 @@ export async function DELETE(
     );
     return NextResponse.json({ success: true, deleted: result.affectedRows });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: "Database error" }, { status: 500 });
   }
 }

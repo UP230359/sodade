@@ -19,7 +19,7 @@ export function useCheckins(userId: number | null) {
     try {
       const data = await getCheckins(userId); // GET /api/checkins?userId=...
       setCheckins(data);
-    } catch (err) {
+    } catch {
       setError("No se pudieron cargar tus reflexiones. Intenta de nuevo.");
     } finally {
       setLoading(false);

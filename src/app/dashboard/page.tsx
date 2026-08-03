@@ -52,7 +52,7 @@ export default function DashboardPage() {
   const [emotionFilter, setEmotionFilter] = useState<string | null>(null);
 
   // Mientras no haya user.id, useCheckins no pide nada a la API.
-  const { checkins, loading, error, refetch } = useCheckins(user?.id ?? null);
+  const { checkins, error, refetch } = useCheckins(user?.id ?? null);
 
   // Sin sesión no hay a quién pedirle checkins: se manda al login.
   useEffect(() => {
@@ -67,13 +67,12 @@ export default function DashboardPage() {
   const { dominant, secondary } = useMemo(() => getDominantEmotions(checkins), [checkins]);
   const streak = useMemo(() => getStreak(checkins), [checkins]);
   const weeklyPatterns = useMemo(() => getWeeklyPatterns(checkins), [checkins]);
-  const latest = checkins[0] ?? null; // la API ya los manda ordenados por fecha DESC
 
-  const now = new Date();
+  const now = useMemo(() => new Date(), []);
   const monthGrid = getMonthGrid(now.getFullYear(), now.getMonth());
   const moodByDay = useMemo(
     () => getMoodByDay(checkins, now.getFullYear(), now.getMonth()),
-    [checkins],
+    [checkins, now],
   );
 
   const weekCheckins = useMemo(() => getCheckinsThisWeek(checkins), [checkins]);
