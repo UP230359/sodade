@@ -1,8 +1,13 @@
+"use client";
+
+import MoodChart from "@/components/mood/MoodChart";
+
 export default function InsightsPage() {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">Insights Inbox</h1>
-      <p>Coming soon...</p>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 p-6 md:p-8">
+      <div className="max-w-5xl mx-auto">
+        <MoodChart />
+      </div>
     </div>
   );
 }
