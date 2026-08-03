@@ -27,6 +27,11 @@ export function useCheckins(userId: number | null) {
   }, [userId]);
 
   useEffect(() => {
+    // Fetch de datos al montar / cuando cambia el usuario: patrón válido de
+    // sincronizar con un sistema externo (la API). El setLoading(true) al
+    // inicio de fetchCheckins dispara este warning, pero es un falso
+    // positivo para este caso de uso (ver react.dev/learn/you-might-not-need-an-effect).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCheckins();
   }, [fetchCheckins]);
 
