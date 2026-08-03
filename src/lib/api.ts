@@ -45,6 +45,10 @@ export interface User {
   lastName: string;
   email: string;
   accountType: "personal" | "professional";
+  // Opcionales: los usa el flujo de registro (isOnboarded) y las cuentas
+  // profesionales (cedula); no todos los endpoints los devuelven todavía.
+  isOnboarded?: boolean;
+  cedula?: string;
 }
 
 // Datos que se mandan al hacer login: email y password en texto plano

@@ -3,16 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AxiosError } from "axios";
 import Input from "@/components/ui/Input";
-import Button from "@/components/ui/Button";
 import { useAppDispatch } from "@/store";
 import { setUser } from "@/store/userSlice";
 import { loginUser } from "@/lib/api";
+import { AxiosError } from "axios";
 
 export default function LoginPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -41,20 +41,27 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted px-4">
-      <div className="w-full max-w-md bg-background rounded-2xl border border-neutral/20 shadow-sm p-10">
-        <div className="text-center mb-8">
-          <h1 className="font-serif text-3xl font-normal text-foreground">
+    <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4 font-sans">
+      <div className="w-full max-w-md bg-white rounded-2xl border border-stone-200/60 shadow-md p-10 space-y-8">
+
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <span className="text-[10px] tracking-[0.25em] font-semibold text-amber-600 block uppercase">
             Welcome Back
+          </span>
+          <h1 className="font-serif text-3xl font-medium text-stone-950">
+            Sign In
           </h1>
-          <p className="text-secondary mt-2">Sign in to continue your journey.</p>
+          <p className="text-stone-500 text-sm">Sign in to continue your journey.</p>
         </div>
+
         {error && (
-          <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 font-medium text-center mb-5">
+          <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 font-medium text-center">
             {error}
           </p>
         )}
-        <form onSubmit={handleSubmit} className="space-y-5">
+
+        <form onSubmit={handleSubmit} className="space-y-6">
           <Input
             label="Email Address"
             type="email"
@@ -62,11 +69,15 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="!bg-muted !border-transparent !rounded-lg focus:!ring-primary/20"
+            className="border-stone-200 placeholder:text-stone-400"
           />
+
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-sm font-medium text-secondary">Password</label>
+              <label className="text-sm font-medium text-stone-700">Password</label>
+              <Link href="#" className="text-xs text-amber-600 font-medium hover:underline">
+                Forgot password?
+              </Link>
             </div>
             <Input
               type="password"
@@ -74,21 +85,24 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="!bg-muted !border-transparent !rounded-lg focus:!ring-primary/20"
+              className="border-stone-200 placeholder:text-stone-400"
             />
           </div>
-          <Button
-            type="submit"
-            fullWidth
-            disabled={isSubmitting}
-            className="!bg-foreground !text-background hover:!bg-foreground/90 !rounded-lg !font-normal disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? "Signing in..." : "Sign In"}
-          </Button>
+
+          <div className="pt-2 flex justify-center">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-3 bg-[#1c1816] text-stone-100 rounded-full font-medium tracking-wide shadow-md transition-all duration-200 hover:bg-[#2b2522] text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? "Signing in..." : "Sign In"}
+            </button>
+          </div>
         </form>
-        <p className="text-center text-sm text-secondary mt-6">
+
+        <p className="text-center text-sm text-stone-500 pt-2">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-foreground font-medium hover:underline">
+          <Link href="/register" className="text-stone-900 font-semibold hover:underline">
             Sign up
           </Link>
         </p>
