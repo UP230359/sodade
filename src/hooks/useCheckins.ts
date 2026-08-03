@@ -27,11 +27,8 @@ export function useCheckins(userId: number | null) {
   }, [userId]);
 
   useEffect(() => {
-  const loadCheckins = async () => {
-    await fetchCheckins();
-  };
-  loadCheckins();
-  }, []);
+    fetchCheckins();
+  }, [fetchCheckins]);
 
   const addCheckin = async (checkin: NewCheckin) => {
     await createCheckin(checkin);

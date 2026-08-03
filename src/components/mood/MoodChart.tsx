@@ -7,7 +7,6 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { MoodEntry, fetchMoodEntries } from "@/store/moodSlice";
 import { useEffect, useMemo, useRef } from "react";
 import html2canvas from "html2canvas-pro";
-import { TEMP_USER_ID } from "@/lib/constants";
 import { generateEmotionReportPdf } from "@/lib/generateEmotionReportPdf";
 
 //Traemos la gráfica y todo lo relacionado a colores/emojis desde su
@@ -29,18 +28,22 @@ export default function MoodChart() {
   const dispatch = useAppDispatch();
   const entries = useAppSelector((state) => state.mood.entries);
   const loading = useAppSelector((state) => state.mood.loading);
+  //Usuario real logueado desde Redux (antes se usaba TEMP_USER_ID fijo)
+  const user = useAppSelector((state) => state.user.user);
 
   //chartRef es para acceder al elemento HTML del gráfico
   //lo usamos para convertir el gráfico a imagen cuando generamos el PDF
 
   const chartRef = useRef<HTMLDivElement>(null);
 
-  //Cuando el componente carga, pedimos que traiga todas las emociones
-  //TEMP_USER_ID es un ID temporal del usuario mientras no haya login real
+  //Cuando el componente carga (y ya hay usuario logueado), pedimos
+  //que traiga todas las emociones de ESE usuario
 
   useEffect(() => {
-    dispatch(fetchMoodEntries(TEMP_USER_ID));
-  }, [dispatch]);
+    if (user) {
+      dispatch(fetchMoodEntries(user.id));
+    }
+  }, [dispatch, user]);
 
   //useMemo calcula los datos del gráfico solo cuando cambian los entries
   //así no recalculamos todo cada vez que se renderiza el componente

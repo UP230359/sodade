@@ -54,14 +54,11 @@ export interface LoginCredentials {
 }
 
 export interface RegisterCredentials {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  password_hash: string;
-}
-
-export interface AuthResponse {
-  user: User;
-  token: string;
+  password: string;
+  accountType: "personal" | "professional";
 }
 
 export const getCheckins = async (userId: number): Promise<Checkin[]> => {
@@ -99,7 +96,7 @@ export const loginUser = async (
 
 export const registerUser = async (
   credentials: RegisterCredentials,
-): Promise<AuthResponse> => {
+): Promise<{ user: User }> => {
   const { data } = await api.post("/auth/register", credentials);
   return data;
 };

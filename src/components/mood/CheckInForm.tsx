@@ -4,7 +4,6 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { submitMoodEntry, fetchMoodEntries } from "@/store/moodSlice";
 import { useState, useEffect } from "react";
 import Badge from "@/components/ui/Badge";
-import { TEMP_USER_ID } from "@/lib/constants";
 import MoodSelector, { MoodType } from "@/components/mood/MoodSelector";
 
 //Lista de los tags que puede elegir el usuario para decir que
@@ -24,6 +23,8 @@ export default function CheckInForm() {
   const dispatch = useAppDispatch();
   //Traigo el estado de submitting para saber si se esta guardando algo
   const submitting = useAppSelector((state) => state.mood.submitting);
+  //Traigo el usuario real logueado desde Redux (antes se usaba TEMP_USER_ID fijo)
+  const user = useAppSelector((state) => state.user.user);
 
   //Esto es para evitar un error de hydration en el boton
   //en el primer render el estado de redux no siempre coincide entre
@@ -58,12 +59,18 @@ export default function CheckInForm() {
       return;
     }
 
+    //Sin usuario logueado no hay a nombre de quien guardar el checkin
+    if (!user) {
+      alert("Please log in again");
+      return;
+    }
+
     try {
       //Aqui se manda la peticion a la api usando axios
       //y se guarda el resultado en redux
       await dispatch(
         submitMoodEntry({
-          userId: TEMP_USER_ID,
+          userId: user.id,
           mood: selectedMood,
           note: note || `I'm feeling ${selectedMood}`,
           tags: selectedTags,
@@ -71,7 +78,7 @@ export default function CheckInForm() {
       ).unwrap();
 
       //Se vuelve a pedir la lista para que el historial quede actualizado
-      await dispatch(fetchMoodEntries(TEMP_USER_ID));
+      await dispatch(fetchMoodEntries(user.id));
 
       //Se muestra el mensaje de que ya se guardo
       setSubmitted(true);
