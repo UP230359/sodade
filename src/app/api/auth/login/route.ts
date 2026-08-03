@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
+import crypto from "crypto";
 
 // Endpoint POST /api/auth/login
 // Valida el email y password directamente contra la tabla users de MySQL.
@@ -26,8 +27,13 @@ export async function POST(request: Request) {
 
     const user = rows[0];
 
-    // Comparación directa de contraseñas en texto plano, sin hash
-    if (user.password_hash !== password) {
+    // El registro (/api/register) guarda password_hash como SHA-256 de la contraseña,
+    // por lo que aquí hasheamos la contraseña recibida con el mismo algoritmo antes
+    // de compararla (antes se comparaba en texto plano contra el hash y nunca coincidía,
+    // impidiendo el login de usuarios recién registrados).
+    const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
+
+    if (user.password_hash !== passwordHash) {
       return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
     }
 

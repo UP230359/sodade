@@ -19,7 +19,7 @@ export function useCheckins(userId: number | null) {
     try {
       const data = await getCheckins(userId); // GET /api/checkins?userId=...
       setCheckins(data);
-    } catch (err) {
+    } catch {
       setError("No se pudieron cargar tus reflexiones. Intenta de nuevo.");
     } finally {
       setLoading(false);
@@ -27,11 +27,13 @@ export function useCheckins(userId: number | null) {
   }, [userId]);
 
   useEffect(() => {
-  const loadCheckins = async () => {
-    await fetchCheckins();
-  };
-  loadCheckins();
-  }, []);
+    // Fetch de datos al montar / cuando cambia el usuario: patrón válido de
+    // sincronizar con un sistema externo (la API). El setLoading(true) al
+    // inicio de fetchCheckins dispara este warning, pero es un falso
+    // positivo para este caso de uso (ver react.dev/learn/you-might-not-need-an-effect).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchCheckins();
+  }, [fetchCheckins]);
 
   const addCheckin = async (checkin: NewCheckin) => {
     await createCheckin(checkin);
