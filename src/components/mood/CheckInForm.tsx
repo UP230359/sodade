@@ -2,6 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from "@/store";
 import { submitMoodEntry, fetchMoodEntries } from "@/store/moodSlice";
+import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 import Badge from "@/components/ui/Badge";
 import MoodSelector, { MoodType } from "@/components/mood/MoodSelector";
@@ -24,7 +25,7 @@ export default function CheckInForm() {
   //Traigo el estado de submitting para saber si se esta guardando algo
   const submitting = useAppSelector((state) => state.mood.submitting);
   //Traigo el usuario real logueado desde Redux (antes se usaba TEMP_USER_ID fijo)
-  const user = useAppSelector((state) => state.user.user);
+  const { user } = useAuth();
 
   //Esto es para evitar un error de hydration en el boton
   //en el primer render el estado de redux no siempre coincide entre

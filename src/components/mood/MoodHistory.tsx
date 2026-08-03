@@ -2,6 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from "@/store";
 import { MoodEntry, fetchMoodEntries } from "@/store/moodSlice";
+import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useMemo } from "react";
 
 //Aqui defino el color de fondo que le toca a cada emocion
@@ -37,7 +38,7 @@ export default function MoodHistory() {
   const loading = useAppSelector((state) => state.mood.loading);
   const error = useAppSelector((state) => state.mood.error);
   //Usuario real logueado desde Redux (antes se usaba TEMP_USER_ID fijo)
-  const user = useAppSelector((state) => state.user.user);
+  const { user } = useAuth();
 
   //Cuando el componente se monta (y ya hay usuario logueado) pido
   //los checkins de ESE usuario, no de un ID fijo

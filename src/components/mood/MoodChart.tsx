@@ -5,6 +5,7 @@
 
 import { useAppDispatch, useAppSelector } from "@/store";
 import { MoodEntry, fetchMoodEntries } from "@/store/moodSlice";
+import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useMemo, useRef } from "react";
 import html2canvas from "html2canvas-pro";
 import { generateEmotionReportPdf } from "@/lib/generateEmotionReportPdf";
@@ -29,7 +30,7 @@ export default function MoodChart() {
   const entries = useAppSelector((state) => state.mood.entries);
   const loading = useAppSelector((state) => state.mood.loading);
   //Usuario real logueado desde Redux (antes se usaba TEMP_USER_ID fijo)
-  const user = useAppSelector((state) => state.user.user);
+  const { user } = useAuth();
 
   //chartRef es para acceder al elemento HTML del gráfico
   //lo usamos para convertir el gráfico a imagen cuando generamos el PDF

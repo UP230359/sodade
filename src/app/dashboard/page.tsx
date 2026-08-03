@@ -9,7 +9,7 @@ import StreakCounter from "@/components/dashboard/StreakCounter";
 import SummaryCard from "@/components/dashboard/SummaryCard";
 import CheckInForm from "@/components/mood/CheckInForm";
 import MoodChart from "@/components/mood/MoodChart";
-import { useAppSelector } from "@/store";
+import { useAuth } from "@/hooks/useAuth";
 import { useCheckins } from "@/hooks/useCheckins";
 import {
   CORE_EMOTIONS,
@@ -43,8 +43,7 @@ export default function DashboardPage() {
 
   // El login actual no persiste sesión (sin cookie/token): el usuario solo
   // existe en Redux mientras dure la pestaña. Se lee directo, sin esperar nada.
-  const user = useAppSelector((state) => state.user.user);
-  const isAuthenticated = useAppSelector((state) => state.user.isAuthenticated);
+  const { user, isAuthenticated } = useAuth();
 
   // Estado local (no Redux) porque solo le importa a esta pantalla:
   // qué modal está abierto y qué emoción se está usando para filtrar.

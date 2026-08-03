@@ -78,10 +78,12 @@ export async function POST(request: Request) {
       await connection.commit();
 
       // Return user data (excluding password_hash)
+      // id se devuelve como number (no .toString()) para que coincida con el
+      // User de "@/lib/api" que usa el resto de la app (mood checkins, etc.)
       return NextResponse.json({
         success: true,
         user: {
-          id: userId.toString(),
+          id: userId,
           firstName,
           lastName,
           email,

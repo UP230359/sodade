@@ -8,7 +8,9 @@ export interface RegisterInput {
 }
 
 export interface User {
-  id: string;
+  // id como number para que sea compatible con el User de "@/lib/api",
+  // que es el que usa el resto de la app (mood checkins, journals, dashboard)
+  id: number;
   firstName: string;
   lastName: string;
   email: string;
@@ -55,7 +57,7 @@ export async function validateCedula(cedula: string): Promise<{ valid: boolean; 
 /**
  * Simulates updating the onboarding status in a database.
  */
-export async function updateOnboardingInDB(userId: string): Promise<boolean> {
+export async function updateOnboardingInDB(userId: number): Promise<boolean> {
   await new Promise((resolve) => setTimeout(resolve, 500));
 
   // Placeholder indicating the SQL query that will run here:
