@@ -1,3 +1,4 @@
+// app/(user)/insights/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -8,12 +9,13 @@ import { getInsights } from "@/lib/api";
 
 interface Insight {
     id: string;
+    insight_id?: number;
     type: "system" | "ai" | "psychologist";
     title: string;
     preview: string;
     content: string;
     category: string;
-    timestamp: string;
+    created_at: string;
     isRead: boolean;
     isNew?: boolean;
 }
@@ -63,12 +65,13 @@ export default function InsightsPage() {
                 category?: string;
             }) => ({
                 id: String(item.insight_id),
+                insight_id: item.insight_id,
                 type: "psychologist",
                 title: `Insight from ${item.first_name || "Professional"}`,
                 preview: item.content ? item.content.slice(0, 150) + "..." : "No content",
                 content: item.content || "",
                 category: item.category || "General",
-                timestamp: item.created_at,
+                created_at: item.created_at,
                 isRead: false,
                 isNew: true,
             }));
@@ -125,7 +128,7 @@ export default function InsightsPage() {
     };
 
     const sortedInsights = [...displayInsights].sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
     return (
@@ -161,7 +164,7 @@ export default function InsightsPage() {
                         <div className="divide-y divide-slate-100">
                             {sortedInsights.map((insight) => (
                                 <div
-                                    key={insight.id}
+                                    key={insight.id}  // ✅ Ahora existe id
                                     className="p-4 md:p-5 bg-[#1C1A17]"
                                 >
                                     <div className="flex items-start gap-3">
@@ -179,7 +182,7 @@ export default function InsightsPage() {
                                                     {getTypeLabel(insight.type)}
                                                 </span>
                                                 <span className="text-xs text-white/40">
-                                                    {getTimeAgo(insight.timestamp)}
+                                                    {getTimeAgo(insight.created_at)}
                                                 </span>
                                                 <span className="text-xs text-white/40">
                                                     {insight.category}

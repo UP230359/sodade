@@ -41,18 +41,21 @@ export default function MyResponsesPage() {
         loadResponses();
     }, [loadResponses]);
 
-    const allResponses = [
-        ...responses,
-        ...sentInsights.map((insight) => ({
-            id: parseInt(insight.id || String(insight.insight_id)) || 0,
-            reflection_id: insight.checkin_id || 0,
-            user_id: insight.user_id || "Unknown",
-            reflection_text: insight.content?.split("\n\n")[0]?.replace("**User Reflection:**\n", "") || "",
-            insight_text: insight.content || "",
-            category: insight.category?.toUpperCase() || "GENERAL",
-            response_date: insight.timestamp || new Date().toISOString(),
-        })),
-    ];
+    // app/portal/responses/page.tsx
+// En el mapeo de sentInsights, cambiar timestamp por created_at
+
+const allResponses = [
+    ...responses,
+    ...sentInsights.map((insight) => ({
+        id: parseInt(insight.id || String(insight.insight_id)) || 0,
+        reflection_id: insight.checkin_id || 0,
+        user_id: insight.user_id || "Unknown",
+        reflection_text: insight.content?.split("\n\n")[0]?.replace("**User Reflection:**\n", "") || "",
+        insight_text: insight.content || "",
+        category: insight.category?.toUpperCase() || "GENERAL",
+        response_date: insight.created_at || new Date().toISOString(),  // ✅ Cambiar timestamp por created_at
+    })),
+];
 
     if (loading) {
         return (
