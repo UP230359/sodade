@@ -241,6 +241,7 @@ export const getInsights = async (params?: {
   professional_id?: number;
   checkin_id?: number;
   limit?: number;
+  user_id?: number;  
 }): Promise<Insight[]> => {
   const { data } = await api.get("/insights", { params });
   return data;
