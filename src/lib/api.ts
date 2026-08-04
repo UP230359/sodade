@@ -129,6 +129,11 @@ export const getJournals = async (userId: number): Promise<Journal[]> => {
   return data;
 };
 
+export const getJournalById = async (entryId: number): Promise<Journal> => {
+  const { data } = await api.get(`/journal/${entryId}`);
+  return data;
+};
+
 export const createJournal = async (journal: { user_id: number; title: string; content: string }): Promise<{ entry: Journal; entry_id: number }> => {
   const { data } = await api.post("/journal", journal);
   return data;
@@ -158,9 +163,22 @@ export const getInsights = async (params?: {
   return data;
 };
 
+export const getInsightById = async (insightId: number): Promise<Insight> => {
+  const { data } = await api.get(`/insights/${insightId}`);
+  return data;
+};
+
 export const createInsight = async (insight: NewInsight): Promise<{ success: boolean; insight: Insight; insight_id: number }> => {
   const { data } = await api.post("/insights", insight);
   return data;
+};
+
+export const updateInsight = async (
+  insightId: number,
+  data: { content?: string; tag_id?: number | null }
+): Promise<{ success: boolean }> => {
+  const { data: response } = await api.put(`/insights/${insightId}`, data);
+  return response;
 };
 
 export const deleteInsight = async (insightId: number): Promise<{ success: boolean }> => {
@@ -174,14 +192,16 @@ export const markInsightAsRead = async (insightId: number): Promise<{ success: b
 };
 
 // ============================================
-// FUNCIONES DE REFLECTIONS
+// FUNCIONES DE REFLECTIONS (Community Needs)
 // ============================================
 
 export const getReflections = async (params?: {
   category?: string;
   sort?: "ASC" | "DESC";
+  emotion_id?: string;
 }): Promise<Reflection[]> => {
-  const { data } = await api.get("/reflections", { params });
+  // ✅ Usar la ruta correcta /portal/reflections
+  const { data } = await api.get("/portal/reflections", { params });
   return data;
 };
 
@@ -189,12 +209,17 @@ export const updateReflection = async (
   reflectionId: number,
   data: { draft_recommendation?: string; tag?: string; status?: string }
 ): Promise<{ success: boolean }> => {
-  const { data: response } = await api.put(`/reflections/${reflectionId}`, data);
+  const { data: response } = await api.put("/portal/reflections", {
+    id: reflectionId,
+    draft_recommendation: data.draft_recommendation,
+    tag: data.tag,
+    status: data.status,
+  });
   return response;
 };
 
 // ============================================
-// FUNCIONES DE RESPONSES (Portal)
+// FUNCIONES DE RESPONSES (My Responses - Portal)
 // ============================================
 
 export const getResponses = async (professionalId?: number): Promise<PsychologistResponse[]> => {
@@ -208,6 +233,20 @@ export const getResponses = async (professionalId?: number): Promise<Psychologis
 
 export const getVerificationStatus = async (userId?: number): Promise<VerificationStatus> => {
   const { data } = await api.get("/portal/verify", { params: { user_id: userId } });
+  return data;
+};
+
+// ============================================
+// FUNCIONES DE TAGS (Portal)
+// ============================================
+
+export const getTags = async (): Promise<{ tag_id: number; name: string }[]> => {
+  const { data } = await api.get("/portal/tags");
+  return data;
+};
+
+export const createTag = async (name: string): Promise<{ tag_id: number }> => {
+  const { data } = await api.post("/portal/tags", { name });
   return data;
 };
 

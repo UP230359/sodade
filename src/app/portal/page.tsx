@@ -8,8 +8,6 @@ import { createInsightEntry } from "@/store/insightsSlice";
 import { getReflections, updateReflection, Reflection } from "@/lib/api";
 import Textarea from "@/components/ui/Textarea";
 
-// ✅ Eliminado Button del import (no se usa)
-
 const getTimeAgo = (dateString: string) => {
     const now = new Date();
     const then = new Date(dateString);
@@ -56,23 +54,47 @@ export default function PortalPage() {
         setLoading(true);
         setError(null);
         try {
-            const data = await getReflections({
-                category: filter === "all" ? undefined : filter,
-                sort: sort === "newest" ? "DESC" : "ASC",
-            });
+            // ✅ Tipar correctamente el sort
+            const sortParam: "DESC" | "ASC" = sort === "newest" ? "DESC" : "ASC";
+            
+            const params: { emotion_id?: string; sort?: "DESC" | "ASC" } = {
+                sort: sortParam,
+            };
+            
+            if (filter && filter !== "all") {
+                const emotionMap: Record<string, string> = {
+                    anxiety: "5",
+                    sadness: "3",
+                    stress: "6",
+                    anger: "4",
+                    calm: "2",
+                    joy: "1",
+                    disgust: "6",
+                    surprise: "7",
+                    trust: "8"
+                };
+                params.emotion_id = emotionMap[filter] || filter;
+            }
+
+            console.log("🔵 Cargando reflections con params:", params);
+            
+            const data = await getReflections(params);
+            console.log("✅ Reflections recibidas:", data);
+            console.log("📊 Cantidad:", data.length);
+            
             setReflections(data);
         } catch (err) {
-            console.error("Error loading reflections:", err);
+            console.error("❌ Error loading reflections:", err);
             setError("Failed to load reflections. Please try again.");
         } finally {
             setLoading(false);
         }
     };
 
+    // ✅ eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
-    //eslint-disable-next-line react-hooks/set-state-in-effect
-    loadReflections();
-    }, []);
+        loadReflections();
+    }, [filter, sort]);
 
     const handleSendInsight = async (reflection: Reflection) => {
         if (!draftText.trim()) {
@@ -154,7 +176,10 @@ export default function PortalPage() {
                 <div className="mb-4 md:mb-6 p-3 md:p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
                     {error}
                     <button 
-                        onClick={loadReflections}
+                        onClick={() => {
+                            setLoading(true);
+                            loadReflections();
+                        }}
                         className="ml-3 text-red-600 hover:text-red-800 font-medium"
                     >
                         Retry
@@ -202,12 +227,15 @@ export default function PortalPage() {
                         const categoryColor = getCategoryColor(reflection.category);
 
                         return (
-                            <div key={reflection.id} className="bg-[#FFFFFF] rounded-2xl shadow-lg border border-[#F4F4F4] overflow-hidden">
+                            <div 
+                                key={reflection.id}
+                                className="bg-[#FFFFFF] rounded-2xl shadow-lg border border-[#F4F4F4] overflow-hidden"
+                            >
                                 <div className="p-4 sm:p-5 md:p-6">
                                     <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
                                         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                                             <span className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium border ${categoryColor}`}>
-                                                {reflection.category.toUpperCase()}
+                                                {reflection.category?.toUpperCase() || "UNKNOWN"}
                                             </span>
                                             <span className="text-xs text-[#6C757D]">User ID: {reflection.user_id}</span>
                                             <span className="text-xs text-[#6C757D]">{getTimeAgo(reflection.timestamp)}</span>
@@ -220,7 +248,7 @@ export default function PortalPage() {
                                     </div>
 
                                     <p className="text-sm text-[#333333] leading-relaxed mb-3">
-                                        {reflection.content}
+                                        {reflection.content || "No content"}
                                     </p>
 
                                     <div className="flex items-center gap-2 mb-3">
