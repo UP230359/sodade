@@ -129,7 +129,7 @@ export default function JournalPage() {
             if (textareaRef.current) {
                 textareaRef.current.style.height = "auto";
             }
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error saving entry:', error);
             setSaveFeedback("error");
             setTimeout(() => setSaveFeedback("idle"), 2000);
@@ -176,7 +176,7 @@ export default function JournalPage() {
             if (editingEntry?.entry_id === entryToDelete) {
                 resetForm();
             }
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error deleting entry:', error);
         }
     };

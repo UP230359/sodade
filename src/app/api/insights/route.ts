@@ -1,4 +1,3 @@
-// app/api/insights/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
@@ -14,14 +13,11 @@ interface InsightRow extends RowDataPacket {
     last_name?: string;
 }
 
-// GET - Obtener insights por usuario
 export async function GET(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams;
         const userId = searchParams.get('user_id');
         const professionalId = searchParams.get('professional_id');
-
-        console.log('🔵 GET /api/insights - userId:', userId, 'professionalId:', professionalId);
 
         let query = `
             SELECT 
@@ -37,30 +33,22 @@ export async function GET(request: NextRequest) {
             LEFT JOIN users u ON i.professional_id = u.user_id
             WHERE 1=1
         `;
-
-        const params: any[] = [];
+        const params: (string | number)[] = [];
 
         if (userId) {
             query += ` AND i.checkin_id IN (SELECT checkin_id FROM checkins WHERE user_id = ?)`;
             params.push(parseInt(userId));
         }
-
         if (professionalId) {
             query += ` AND i.professional_id = ?`;
             params.push(parseInt(professionalId));
         }
-
         query += ` ORDER BY i.created_at DESC`;
 
-        console.log('🔵 Query:', query);
-        console.log('🔵 Parámetros:', params);
-
         const [rows] = await pool.query<InsightRow[]>(query, params);
-        console.log(`✅ ${rows.length} insights encontrados`);
-
         return NextResponse.json(rows);
     } catch (error) {
-        console.error('❌ Error fetching insights:', error);
+        console.error('Error fetching insights:', error);
         return NextResponse.json(
             { error: 'Failed to fetch insights', details: String(error) },
             { status: 500 }
@@ -68,12 +56,9 @@ export async function GET(request: NextRequest) {
     }
 }
 
-// POST - Crear un nuevo insight
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        console.log('🔵 POST /api/insights - Body:', body);
-        
         const { checkin_id, professional_id, content } = body;
 
         if (!checkin_id || !professional_id || !content) {
@@ -83,42 +68,35 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Verificar que el checkin existe
-        const [checkinExists] = await pool.query(
+        const [checkinExists] = await pool.query<RowDataPacket[]>(
             'SELECT checkin_id FROM checkins WHERE checkin_id = ?',
             [checkin_id]
         );
-
-        if ((checkinExists as any[]).length === 0) {
+        if (checkinExists.length === 0) {
             return NextResponse.json(
                 { error: `Checkin ${checkin_id} not found` },
                 { status: 404 }
             );
         }
 
-        // Verificar que el profesional existe
-        const [professionalExists] = await pool.query(
+        const [professionalExists] = await pool.query<RowDataPacket[]>(
             'SELECT user_id FROM users WHERE user_id = ?',
             [professional_id]
         );
-
-        if ((professionalExists as any[]).length === 0) {
+        if (professionalExists.length === 0) {
             return NextResponse.json(
                 { error: `Professional ${professional_id} not found` },
                 { status: 404 }
             );
         }
 
-        // Insertar en insights
         const [result] = await pool.query<ResultSetHeader>(
             `INSERT INTO insights (checkin_id, professional_id, content, created_at)
              VALUES (?, ?, ?, NOW())`,
             [checkin_id, professional_id, content]
         );
 
-        console.log(`✅ Insight creado con ID: ${result.insertId}`);
-
-        const [newInsight] = await pool.query(
+        const [newInsight] = await pool.query<InsightRow[]>(
             `SELECT 
                 i.insight_id,
                 i.checkin_id,
@@ -135,11 +113,11 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            insight: (newInsight as any[])[0],
-            insight_id: result.insertId
+            insight: newInsight[0],
+            insight_id: result.insertId,
         });
     } catch (error) {
-        console.error('❌ Error creating insight:', error);
+        console.error('Error creating insight:', error);
         return NextResponse.json(
             { error: 'Failed to create insight', details: String(error) },
             { status: 500 }

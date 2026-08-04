@@ -306,7 +306,7 @@ export const getReflections = async (params?: {
       sort: params?.sort 
     } 
   });
-  return data.map((item: any) => ({
+  return data.map((item: unknown) => ({
     ...item,
     category: mapEmotionIdToCategory(item.category)
   }));

@@ -1,13 +1,10 @@
-// app/portal/responses/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/index";
-import { selectAllInsights } from "@/store/insightsSlice";
 import { getResponses, PsychologistResponse } from "@/lib/api";
 
-// --- Helper Functions ---
 const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -17,22 +14,15 @@ const formatDate = (dateString: string) => {
     });
 };
 
-// --- Main Component ---
 export default function MyResponsesPage() {
     const [responses, setResponses] = useState<PsychologistResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [professionalId] = useState(10); // user_id del profesional
+    const [professionalId] = useState(10);
+    const insights = useSelector((state: RootState) => state.insights?.insights || []);
+    const sentInsights = insights.filter((insight) => insight.type === "psychologist");
 
-    // ✅ Obtener insights de Redux
-    const insights = useSelector(selectAllInsights);
-    const sentInsights = insights.filter((i: any) => i.type === "psychologist");
-
-    useEffect(() => {
-        loadResponses();
-    }, []);
-
-    const loadResponses = async () => {
+    const loadResponses = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -44,13 +34,17 @@ export default function MyResponsesPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [professionalId]);
 
-    // ✅ Combinar respuestas de la API con insights de Redux
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        loadResponses();
+    }, [loadResponses]);
+
     const allResponses = [
         ...responses,
-        ...sentInsights.map((insight: any) => ({
-            id: parseInt(insight.id || insight.insight_id) || 0,
+        ...sentInsights.map((insight) => ({
+            id: parseInt(insight.id || String(insight.insight_id)) || 0,
             reflection_id: insight.checkin_id || 0,
             user_id: insight.user_id || "Unknown",
             reflection_text: insight.content?.split("\n\n")[0]?.replace("**User Reflection:**\n", "") || "",
@@ -59,10 +53,6 @@ export default function MyResponsesPage() {
             response_date: insight.timestamp || new Date().toISOString(),
         })),
     ];
-
-    console.log('📊 Total responses:', allResponses.length);
-    console.log('📊 From API:', responses.length);
-    console.log('📊 From Insights:', sentInsights.length);
 
     if (loading) {
         return (
@@ -81,7 +71,6 @@ export default function MyResponsesPage() {
 
     return (
         <div className="p-4 sm:p-6 md:p-8">
-            {/* Header */}
             <div className="mb-6 md:mb-8">
                 <p className="text-sm text-[#6C757D]">Sodade Pro</p>
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -95,20 +84,15 @@ export default function MyResponsesPage() {
                 </div>
             </div>
 
-            {/* Error Message */}
             {error && (
                 <div className="mb-4 md:mb-6 p-3 md:p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
                     {error}
-                    <button 
-                        onClick={loadResponses}
-                        className="ml-3 text-red-600 hover:text-red-800 font-medium"
-                    >
+                    <button onClick={loadResponses} className="ml-3 text-red-600 hover:text-red-800 font-medium">
                         Retry
                     </button>
                 </div>
             )}
 
-            {/* Responses List */}
             <div className="space-y-4 md:space-y-6">
                 {allResponses.length === 0 ? (
                     <div className="text-center py-8 sm:py-12 bg-[#FFFFFF] rounded-2xl border border-[#F4F4F4]">
@@ -118,7 +102,6 @@ export default function MyResponsesPage() {
                     allResponses.map((response) => (
                         <div key={response.id} className="bg-[#FFFFFF] rounded-2xl shadow-lg border border-[#F4F4F4] overflow-hidden">
                             <div className="p-4 sm:p-5 md:p-6">
-                                {/* Original Reflection */}
                                 <div className="mb-4">
                                     <div className="flex flex-wrap items-center gap-2 mb-2">
                                         <span className="text-xs font-medium text-[#6C757D]">ORIGINAL REFLECTION</span>
@@ -129,8 +112,6 @@ export default function MyResponsesPage() {
                                         {response.reflection_text || "No reflection text available"}
                                     </p>
                                 </div>
-
-                                {/* Your Insight */}
                                 <div className="bg-[#F4F4F4] rounded-xl p-3 sm:p-4 border border-[#6C757D]/10">
                                     <div className="flex flex-wrap items-center gap-2 mb-2">
                                         <span className="text-xs font-medium text-[#007BFF]">YOUR INSIGHT</span>

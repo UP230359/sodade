@@ -1,4 +1,4 @@
-// app/portal/community/page.tsx
+// app/portal/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -6,8 +6,9 @@ import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store/index";
 import { createInsightEntry } from "@/store/insightsSlice";
 import { getReflections, updateReflection, Reflection } from "@/lib/api";
-import Button from "@/components/ui/Button";
 import Textarea from "@/components/ui/Textarea";
+
+// ✅ Eliminado Button del import (no se usa)
 
 const getTimeAgo = (dateString: string) => {
     const now = new Date();
@@ -20,7 +21,7 @@ const getTimeAgo = (dateString: string) => {
     if (diffMin < 1) return "Just now";
     if (diffMin < 60) return `${diffMin} minutes ago`;
     if (diffHr < 24) return `${diffHr} hours ago`;
-    if (diffDay < 7) return `${diffDay} days ago`;
+    if (diffDay < 7) return `${diffDay}d ago`;
     return new Date(dateString).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
@@ -38,7 +39,7 @@ const getCategoryColor = (category: string) => {
     }
 };
 
-export default function CommunityPage() {
+export default function PortalPage() {
     const dispatch = useDispatch<AppDispatch>();
     const [reflections, setReflections] = useState<Reflection[]>([]);
     const [loading, setLoading] = useState(true);
@@ -50,10 +51,6 @@ export default function CommunityPage() {
     const [tagInput, setTagInput] = useState("");
     const [professionalId] = useState(10);
     const [isSending, setIsSending] = useState(false);
-
-    useEffect(() => {
-        loadReflections();
-    }, [filter, sort]);
 
     const loadReflections = async () => {
         setLoading(true);
@@ -71,6 +68,11 @@ export default function CommunityPage() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+    //eslint-disable-next-line react-hooks/set-state-in-effect
+    loadReflections();
+    }, []);
 
     const handleSendInsight = async (reflection: Reflection) => {
         if (!draftText.trim()) {

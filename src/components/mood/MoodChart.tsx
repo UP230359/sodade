@@ -308,7 +308,7 @@ export default function MoodChart() {
       pdf.save(
         `emotion-report-${new Date().toISOString().split("T")[0]}.pdf`
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error generating PDF:", error);
     }
   };

@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       [userId],
     );
     return NextResponse.json(rows);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(error);
     return NextResponse.json(
       { error: "Failed to fetch checkins" },
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ checkinId }, { status: 201 });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(error);
     return NextResponse.json(
       { error: "Failed to create checkin" },
