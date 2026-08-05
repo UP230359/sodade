@@ -14,32 +14,36 @@
   --color-anger: var(--anger-color);
   --color-anxiety: var(--anxiety-color);
   --color-neutral: var(--neutral-color);
+  --color-surprise: var(--surprise-color);
+  --color-trust: var(--trust-color);
 
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
 }
 
 @layer base {
   :root {
-    --bg-color: #ffffff;
-    --fg-color: #0f172a;
+    --bg-color: #fcfbf9; /* Exact mockup cream background */
+    --fg-color: #1e293b; /* Deep slate text */
 
-    --primary-color: #3b82f6;
+    --primary-color: #d97706; /* Mockup Amber accent */
     --secondary-color: #64748b;
     --muted-color: #f1f5f9;
 
-    --joy-color: #fbbf24;
-    --calm-color: #2dd4bf;
-    --sadness-color: #60a5fa;
-    --anger-color: #ef4444;
-    --anxiety-color: #a78bfa;
-    --neutral-color: #94a3b8;
+    --joy-color: #d97706;
+    --calm-color: #0f766e;
+    --sadness-color: #2563eb;
+    --anger-color: #b91c1c;
+    --anxiety-color: #7c3aed;
+    --neutral-color: #475569;
+    --surprise-color: #db2777;
+    --trust-color: #4f46e5;
   }
 
   .dark {
     --bg-color: #0f172a;
     --fg-color: #f8fafc;
 
-    --primary-color: #60a5fa;
+    --primary-color: #f59e0b;
     --secondary-color: #94a3b8;
     --muted-color: #1e293b;
 
@@ -49,6 +53,8 @@
     --anger-color: #b91c1c;
     --anxiety-color: #7c3aed;
     --neutral-color: #475569;
+    --surprise-color: #db2777;
+    --trust-color: #4f46e5;
   }
 
   body {

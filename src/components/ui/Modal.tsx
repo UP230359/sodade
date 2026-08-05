@@ -1,63 +1,54 @@
 "use client";
-
-import { ReactNode, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title?: string;
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
-export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export default function Modal({ isOpen, onClose, children }: ModalProps) {
+  const [mounted, setMounted] = useState(() => typeof window !== "undefined");
+
+  useEffect(() => {
+    queueMicrotask(() => setMounted(true));
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     if (isOpen) {
-      window.addEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
+      window.addEventListener("keydown", handleKeyDown);
     }
-
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "unset";
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
-
-  // Render directly via portal; in Next.js client components, document.body is available on client render
-  if (typeof window === "undefined") return null;
+  if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
         onClick={onClose}
+        aria-hidden="true"
       />
-      <div
-        className="relative bg-background border border-neutral/20 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden"
-        role="dialog"
-        aria-modal="true"
-      >
-        {title && (
-          <div className="flex items-center justify-between p-6 border-b border-neutral/10">
-            <h3 className="text-xl font-semibold text-foreground">{title}</h3>
-            <button
-              onClick={onClose}
-              className="text-secondary hover:text-foreground transition-colors cursor-pointer text-2xl leading-none"
-            >
-              &times;
-            </button>
-          </div>
-        )}
-        <div className="p-6">
-          {children}
-        </div>
+      <div className="relative bg-background border border-muted rounded-2xl shadow-2xl max-w-lg w-full p-6 z-10 max-h-[90vh] overflow-y-auto">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-secondary hover:text-foreground p-1 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+          aria-label="Close modal"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        {children}
       </div>
     </div>,
     document.body

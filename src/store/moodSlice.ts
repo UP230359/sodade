@@ -1,67 +1,132 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import {
+  getCheckins,
+  createCheckin,
+  Checkin as ApiCheckin,
+  NewCheckin,
+} from "@/lib/api";
 
 export interface MoodEntry {
   id: string;
-  mood: "excited" | "happy" | "neutral" | "sad" | "angry";
+  mood:
+    | "joy"
+    | "calm"
+    | "sadness"
+    | "anger"
+    | "fear"
+    | "disgust"
+    | "surprise"
+    | "trust";
   level: number; // 1 to 5
   note: string;
   tags: string[];
   timestamp: string; // ISO String
 }
 
+type MoodType = MoodEntry["mood"];
+
 interface MoodState {
   entries: MoodEntry[];
+  loading: boolean;
+  error: string | null;
+  submitting: boolean;
+  submitError: string | null;
 }
 
-const MOOD_LEVELS: Record<MoodEntry["mood"], number> = {
-  excited: 5,
-  happy: 4,
-  neutral: 3,
-  sad: 2,
-  angry: 1,
+const MOOD_LEVELS: Record<MoodType, number> = {
+  joy: 5,
+  calm: 4,
+  sadness: 2,
+  anger: 1,
+  fear: 2,
+  disgust: 1,
+  surprise: 3,
+  trust: 4,
 };
+
+const mapApiCheckinToMoodEntry = (checkin: ApiCheckin): MoodEntry => {
+  const mood = checkin.emotion.toLowerCase() as MoodType;
+  return {
+    id: String(checkin.checkin_id),
+    mood,
+    level: MOOD_LEVELS[mood] ?? 3,
+    note: checkin.note ?? "",
+    tags: checkin.tags ? checkin.tags.split(",") : [],
+    timestamp: checkin.created_at,
+  };
+};
+
+export const fetchMoodEntries = createAsyncThunk(
+  "mood/fetchMoodEntries",
+  async (userId: number) => {
+    const checkins = await getCheckins(userId);
+    return checkins.map(mapApiCheckinToMoodEntry);
+  },
+);
+
+export const submitMoodEntry = createAsyncThunk(
+  "mood/submitMoodEntry",
+  async (payload: {
+    userId: number;
+    mood: MoodType;
+    note: string;
+    tags: string[];
+    sharedAnonymously: boolean;
+  }) => {
+    const body: NewCheckin = {
+      userId: payload.userId,
+      emotionName: payload.mood, // Pass the raw string directly
+      note: payload.note,
+      sharedAnonymously: payload.sharedAnonymously,
+      influences: payload.tags,
+    };
+    return createCheckin(body);
+  },
+);
 
 const initialState: MoodState = {
   entries: [],
+  loading: false,
+  error: null,
+  submitting: false,
+  submitError: null,
 };
 
 const moodSlice = createSlice({
   name: "mood",
   initialState,
   reducers: {
-    addMoodEntry: (
-      state,
-      action: PayloadAction<{
-        mood: MoodEntry["mood"];
-        note: string;
-        tags: string[];
-      }>
-    ) => {
-      const { mood, note, tags } = action.payload;
-      const newEntry: MoodEntry = {
-        id: Math.random().toString(36).substring(2, 9),
-        mood,
-        level: MOOD_LEVELS[mood] || 3,
-        note,
-        tags,
-        timestamp: new Date().toISOString(),
-      };
-      state.entries.unshift(newEntry);
-      
-      // Persist to localStorage if window exists
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem("sodade_mood_entries", JSON.stringify(state.entries));
-        } catch (e) {
-          console.error("Failed to persist mood entries", e);
-        }
-      }
-    },
     setMoodEntries: (state, action: PayloadAction<MoodEntry[]>) => {
       state.entries = action.payload;
     },
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchMoodEntries.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchMoodEntries.fulfilled, (state, action) => {
+        state.loading = false;
+        state.entries = action.payload;
+      })
+      .addCase(fetchMoodEntries.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message ?? "Failed to load checkins";
+      })
+      .addCase(submitMoodEntry.pending, (state) => {
+        state.submitting = true;
+        state.submitError = null;
+      })
+      .addCase(submitMoodEntry.fulfilled, (state) => {
+        state.submitting = false;
+      })
+      .addCase(submitMoodEntry.rejected, (state, action) => {
+        state.submitting = false;
+        state.submitError = action.error.message ?? "Failed to save checkin";
+      });
+  },
 });
 
-export const { addMoodEntry, setMoodEntries } = moodSlice.actions;
+export const { setMoodEntries } = moodSlice.actions;
 export default moodSlice.reducer;
