@@ -7,6 +7,7 @@ interface BadgeProps {
 }
 
 export default function Badge({ children, variant = "neutral", className = "" }: BadgeProps) {
+  // Map the variant dynamically to your global CSS variables in globals.css
   const variantStyles = {
     primary: "bg-primary/10 text-primary border-primary/20",
     secondary: "bg-secondary/10 text-secondary border-secondary/20",
@@ -15,16 +16,14 @@ export default function Badge({ children, variant = "neutral", className = "" }:
     sadness: "bg-sadness/10 text-sadness border-sadness/20",
     anger: "bg-anger/10 text-anger border-anger/20",
     anxiety: "bg-anxiety/10 text-anxiety border-anxiety/20",
-    neutral: "bg-neutral/10 text-neutral-dark border-neutral/20",
+    neutral: "bg-muted text-secondary border-muted",
+    surprise: "bg-surprise/10 text-surprise border-surprise/20",
+    trust: "bg-trust/10 text-trust border-trust/20",
   };
 
   return (
     <span
-      className={`
-        inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border
-        ${variantStyles[variant]}
-        ${className}
-      `}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${variantStyles[variant]} ${className}`}
     >
       {children}
     </span>

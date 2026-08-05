@@ -1,11 +1,10 @@
-// components/ui/Textarea.tsx
-import { forwardRef, TextareaHTMLAttributes } from "react";
+import React from "react";
 
-interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
 }
 
-const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, className = "", ...props }, ref) => {
     return (
       <div className="flex flex-col gap-1.5 w-full">

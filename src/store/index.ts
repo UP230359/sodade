@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import moodReducer from "./moodSlice";
 import userReducer from "./userSlice";
 import journalReducer from "./journalSlice";
+import insightsReducer from "./insightsSlice";
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 
 export const store = configureStore({
@@ -9,6 +10,7 @@ export const store = configureStore({
     mood: moodReducer,
     user: userReducer,
     journal: journalReducer,
+    insights: insightsReducer,
   },
 });
 

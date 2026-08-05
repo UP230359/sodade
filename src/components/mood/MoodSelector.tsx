@@ -1,53 +1,41 @@
 "use client";
 
-export type MoodType =
-  | "joy"
-  | "calm"
-  | "sadness"
-  | "anger"
-  | "fear"
-  | "disgust"
-  | "surprise"
-  | "trust";
+// Import the 8 core emotions and the styling function from moodStats
+// This ensures we send exactly what the MySQL database expects (preventing the 400 error)
+import { CORE_EMOTIONS, emotionSquareClass } from "@/lib/moodStats";
 
-//Lista de las emociones que se pueden elegir
-//cada una tiene su nombre y su valor
-const MOODS: { label: string; value: MoodType }[] = [
-  { label: "Joy", value: "joy" },
-  { label: "Calm", value: "calm" },
-  { label: "Sadness", value: "sadness" },
-  { label: "Anger", value: "anger" },
-  { label: "Fear", value: "fear" },
-  { label: "Disgust", value: "disgust" },
-  { label: "Surprise", value: "surprise" },
-  { label: "Trust", value: "trust" },
-];
+// We export the type so CheckInForm knows exactly what strings are valid
+export type MoodType = typeof CORE_EMOTIONS[number]["key"];
 
 interface MoodSelectorProps {
   selected: MoodType | null;
   onSelect: (mood: MoodType) => void;
 }
 
-//Este componente no guarda su propio estado, recibe la emocion
-//seleccionada y una funcion para cambiarla desde el componente que lo usa
-//asi se puede reutilizar en otros lados si hace falta despues
 export default function MoodSelector({ selected, onSelect }: MoodSelectorProps) {
   return (
-    <div className="flex flex-wrap gap-3">
-      {MOODS.map((mood) => (
-        <button
-          key={mood.value}
-          type="button"
-          onClick={() => onSelect(mood.value)}
-          className={`px-4 py-2 rounded-full font-medium transition-all border-2 ${
-            selected === mood.value
-              ? "bg-yellow-200 border-yellow-400 text-gray-900 scale-105"
-              : "bg-gray-100 border-gray-200 text-gray-700 hover:border-gray-300"
-          }`}
-        >
-          {mood.label}
-        </button>
-      ))}
+    <div className="flex flex-wrap gap-2 md:gap-3">
+      {CORE_EMOTIONS.map((mood) => {
+        const isSelected = selected === mood.key;
+
+        // Get the exact global color class (e.g. bg-joy, bg-anxiety) for the active state
+        // This maps the 8 raw DB emotions to our 6 global CSS accent colors
+        const bgClass = emotionSquareClass(mood.key);
+
+        return (
+          <button
+            key={mood.key}
+            type="button"
+            onClick={() => onSelect(mood.key as MoodType)}
+            className={`px-4 py-2 rounded-full font-medium transition-all border ${isSelected
+                ? `${bgClass} text-foreground border-transparent scale-105 shadow-sm`
+                : "bg-background border-muted text-secondary hover:border-foreground/30 hover:text-foreground"
+              }`}
+          >
+            {mood.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -1,46 +1,120 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
+import crypto from "crypto";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, password_hash } = body;
+    console.log("Incoming registration payload:", body);
+    const { firstName, lastName, email, password, accountType, cedula } = body;
 
-    if (!name || !email || !password_hash) {
+    // Check mandatory fields
+    if (!firstName || !lastName || !email || !password || !accountType) {
       return NextResponse.json(
-        { message: "Missing required fields" },
+        { success: false, error: "Missing required registration fields" },
         { status: 400 },
       );
     }
 
-    const [existingUsers] = await db.execute<RowDataPacket[]>(
-      "SELECT id FROM users WHERE email = ?",
-      [email],
-    );
-
-    if (existingUsers.length > 0) {
+    if (accountType === "professional" && !cedula) {
       return NextResponse.json(
-        { message: "Email already registered" },
-        { status: 409 },
+        {
+          success: false,
+          error: "Cédula profesional is required for professional accounts",
+        },
+        { status: 400 },
       );
     }
 
-    const [result] = await db.execute<ResultSetHeader>(
-      "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
-      [name, email, password_hash],
-    );
+    // Hash password securely using built-in crypto
+    const passwordHash = crypto
+      .createHash("sha256")
+      .update(password)
+      .digest("hex");
 
-    return NextResponse.json(
-      {
-        user: { id: result.insertId, name, email },
-        token: "sodade-dummy-token",
-      },
-      { status: 201 },
-    );
+    // Acquire a connection for transactional safety
+    const connection = await db.getConnection();
+
+    try {
+      await connection.beginTransaction();
+
+      // Check if user already exists
+      const [existingUsers] = await connection.query<RowDataPacket[]>(
+        "SELECT user_id FROM users WHERE email = ? LIMIT 1",
+        [email],
+      );
+
+      if (existingUsers.length > 0) {
+        await connection.rollback();
+        return NextResponse.json(
+          {
+            success: false,
+            error: "An account with this email address already exists",
+          },
+          { status: 400 },
+        );
+      }
+
+      // Insert user into `users` table
+      const [userResult] = await connection.query<ResultSetHeader>(
+        "INSERT INTO users (first_name, last_name, email, password_hash, account_type) VALUES (?, ?, ?, ?, ?)",
+        [firstName, lastName, email, passwordHash, accountType],
+      );
+
+      const userId = userResult.insertId;
+
+      // If it is a professional account, insert profile into `professional_profiles`
+      if (accountType === "professional") {
+        const [existingCedulas] = await connection.query<RowDataPacket[]>(
+          "SELECT user_id FROM professional_profiles WHERE professional_cedula = ? LIMIT 1",
+          [cedula],
+        );
+
+        if (existingCedulas.length > 0) {
+          await connection.rollback();
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                "This professional credential (cédula) is already registered",
+            },
+            { status: 400 },
+          );
+        }
+
+        await connection.query(
+          "INSERT INTO professional_profiles (user_id, professional_cedula, verification_status) VALUES (?, ?, ?)",
+          [userId, cedula, "active"],
+        );
+      }
+
+      await connection.commit();
+
+      return NextResponse.json({
+        success: true,
+        user: {
+          id: userId,
+          firstName,
+          lastName,
+          email,
+          accountType,
+          isOnboarded: false,
+          cedula: accountType === "professional" ? cedula : undefined,
+        },
+      });
+    } catch (dbError) {
+      await connection.rollback();
+      throw dbError;
+    } finally {
+      connection.release();
+    }
   } catch (error) {
+    console.error("Database registration error:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json(
-      { message: "Internal server error" },
+      { success: false, error: errorMessage },
       { status: 500 },
     );
   }
