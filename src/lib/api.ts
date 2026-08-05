@@ -153,7 +153,6 @@ export const createCheckin = async (
 // ============================================
 
 export const getJournals = async (userId: number): Promise<Journal[]> => {
-  // Ajustado para mandar user_id en lugar de userId (lo que espera route.ts)
   const { data } = await api.get("/journal", { params: { user_id: userId } });
   return data;
 };
@@ -196,8 +195,8 @@ export const getInsights = async (params: {
 
 export const createInsight = async (
   insight: NewInsight,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<{ success: boolean; insight: any; insight_id: number }> => {
-  // Mapeamos los campos camelCase al snake_case que espera la base de datos
   const payload = {
     checkin_id: insight.checkinId,
     professional_id: insight.professionalId,
@@ -218,8 +217,6 @@ export const deleteInsight = async (
 export const markInsightAsRead = async (
   insight_id: number,
 ): Promise<{ success: boolean }> => {
-  // Si en el futuro agregas la ruta PUT /api/insights/[id] para marcar leídos, esto lo consumirá.
-  // Por ahora lo pasamos para que no falle Redux.
   const { data } = await api.put(`/insights/${insight_id}`, { is_read: true });
   return data;
 };

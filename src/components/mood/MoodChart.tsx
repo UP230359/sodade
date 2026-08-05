@@ -56,7 +56,7 @@ export default function MoodChart() {
     const mostCommonMood = Object.entries(moodCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || "calm";
     const latest = entries.length > 0 ? chartDataPoints[chartDataPoints.length - 1] : null;
 
-    // Use a fixed reference point or derive cleanly to keep the memo pure
+    // eslint-disable-next-line react-hooks/purity
     const weekAgoTime = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
     return {

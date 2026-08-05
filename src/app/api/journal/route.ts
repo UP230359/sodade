@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       [userId],
     );
     return NextResponse.json(rows);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch journal entries" },
       { status: 500 },
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       entry: newEntry[0],
       entry_id: result.insertId,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to create journal entry" },
       { status: 500 },

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAppDispatch } from "@/store";
 import { setUser, User } from "@/store/userSlice";
-import { registerUserInDB, updateOnboardingInDB, validateCedula } from "@/lib/auth";
+import { registerUserInDB, updateOnboardingInDB } from "@/lib/auth";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
 
@@ -71,18 +71,6 @@ export default function RegisterPage() {
 
     setIsSubmitting(true);
     try {
-      // if (accountType === "professional") {
-      //   const validation = await validateCedula(cedula);
-      //   if (!validation.valid) {
-      //     setErrors({
-      //       cedula: validation.message || "Cédula profesional no encontrada o no válida.",
-      //       form: "No se pudo realizar el registro: la cédula profesional no es válida o no existe.",
-      //     });
-      //     setIsSubmitting(false);
-      //     return;
-      //   }
-      // }
-
       const registeredUser = await registerUserInDB({
         firstName,
         lastName,
@@ -126,16 +114,13 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen w-full font-sans bg-background">
-      {/* LEFT PANEL - Branding & Aesthetic Statement */}
       <div className="hidden lg:flex lg:w-[40%] flex-col justify-between p-16 bg-foreground text-background relative overflow-hidden">
-        {/* Logo */}
         <div className="z-10">
           <span className="text-2xl font-semibold tracking-wider text-background/90 font-serif">
             sodade
           </span>
         </div>
 
-        {/* Statement */}
         <div className="z-10 space-y-6 max-w-sm">
           <h1 className="text-4xl font-serif font-light leading-snug tracking-wide text-background">
             Observe your inner landscape.
@@ -150,17 +135,13 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="z-10 text-xs text-background/50 font-light">
           © 2026 Sodade. All rights reserved.
         </div>
       </div>
 
-      {/* RIGHT PANEL - Forms */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 md:p-16 lg:p-24 bg-background">
         <div className="w-full max-w-xl space-y-8">
-
-          {/* Header */}
           <div className="space-y-2">
             <span className="text-[10px] tracking-[0.25em] font-semibold text-primary block uppercase">
               Begin your journey
@@ -177,15 +158,13 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleRegisterSubmit} className="space-y-6">
-
-            {/* Account Type Selector (Toggles) */}
             <div className="flex p-1 bg-muted/50 rounded-xl border border-muted">
               <button
                 type="button"
                 onClick={() => setAccountType("personal")}
                 className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${accountType === "personal"
-                  ? "bg-foreground text-background shadow-sm"
-                  : "text-secondary hover:text-foreground"
+                    ? "bg-foreground text-background shadow-sm"
+                    : "text-secondary hover:text-foreground"
                   }`}
               >
                 Personal Account
@@ -194,22 +173,20 @@ export default function RegisterPage() {
                 type="button"
                 onClick={() => setAccountType("professional")}
                 className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${accountType === "professional"
-                  ? "bg-foreground text-background shadow-sm"
-                  : "text-secondary hover:text-foreground"
+                    ? "bg-foreground text-background shadow-sm"
+                    : "text-secondary hover:text-foreground"
                   }`}
               >
                 Professional Account
               </button>
             </div>
 
-            {/* General Form Error */}
             {errors.form && (
               <p className="text-sm text-anger bg-anger/10 p-3 rounded-lg border border-anger/20 font-medium">
                 {errors.form}
               </p>
             )}
 
-            {/* Names Input Group */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Input
@@ -237,7 +214,6 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Email Input */}
             <div>
               <Input
                 label="Email Address"
@@ -252,7 +228,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Cédula Profesional Input (Only for Professional Account) */}
             {accountType === "professional" && (
               <div>
                 <Input
@@ -268,7 +243,6 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Passwords Input Group */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Input
@@ -298,7 +272,6 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Terms and Privacy Checkbox */}
             <div className="flex items-start gap-3">
               <input
                 id="agreeTerms"
@@ -325,7 +298,6 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Submit Button */}
             <div className="pt-2 flex justify-center">
               <button
                 type="submit"
@@ -335,12 +307,10 @@ export default function RegisterPage() {
                 {isSubmitting ? "Creating Account..." : "Create Account"}
               </button>
             </div>
-
           </form>
         </div>
       </div>
 
-      {/* SACRED SPACE AGREEMENT MODAL */}
       <Modal
         isOpen={showOnboardingModal}
         onClose={() => setShowOnboardingModal(false)}

@@ -16,7 +16,7 @@ export async function GET(
       return NextResponse.json({ error: "Entry not found" }, { status: 404 });
     }
     return NextResponse.json(rows[0]);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch entry" },
       { status: 500 },
@@ -68,7 +68,7 @@ export async function PUT(
       [id],
     );
     return NextResponse.json({ success: true, entry: updated[0] });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to update entry" },
       { status: 500 },
@@ -97,7 +97,7 @@ export async function DELETE(
       [id],
     );
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to delete entry" },
       { status: 500 },
