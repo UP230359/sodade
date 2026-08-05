@@ -39,8 +39,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId, emotionName, note, sharedAnonymously, influences } = body;
 
+    // Use case-insensitive matching to prevent 400 errors
     const [emotionRows] = await db.query<RowDataPacket[]>(
-      "SELECT emotion_id FROM emotions WHERE name = ?",
+      "SELECT emotion_id FROM emotions WHERE LOWER(name) = LOWER(?)",
       [emotionName],
     );
     if (!emotionRows.length) {
@@ -57,8 +58,9 @@ export async function POST(request: NextRequest) {
 
     if (influences && influences.length > 0) {
       for (const influenceName of influences) {
+        // Case-insensitive matching for tags/influences as well
         const [infRows] = await db.query<RowDataPacket[]>(
-          "SELECT influence_id FROM influences WHERE name = ?",
+          "SELECT influence_id FROM influences WHERE LOWER(name) = LOWER(?)",
           [influenceName],
         );
         if (infRows.length) {

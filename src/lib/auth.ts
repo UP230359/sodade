@@ -20,7 +20,7 @@ export interface User {
 }
 
 export async function registerUserInDB(data: RegisterInput): Promise<User> {
-  const res = await fetch("/api/register", {
+  const res = await fetch("/api/auth/register", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -29,6 +29,9 @@ export async function registerUserInDB(data: RegisterInput): Promise<User> {
   });
 
   const result = await res.json();
+
+  // DEBUG: Log what the backend actually returned
+  console.log("Backend registration response:", result);
 
   if (!res.ok || !result.success) {
     throw new Error(result.error || "Failed to register user in database");
@@ -40,9 +43,13 @@ export async function registerUserInDB(data: RegisterInput): Promise<User> {
 /**
  * Calls the local Next.js API endpoint to validate if the professional credential (cédula) is real.
  */
-export async function validateCedula(cedula: string): Promise<{ valid: boolean; simulated?: boolean; message?: string }> {
+export async function validateCedula(
+  cedula: string,
+): Promise<{ valid: boolean; simulated?: boolean; message?: string }> {
   try {
-    const res = await fetch(`/api/validate-cedula?cedula=${encodeURIComponent(cedula)}`);
+    const res = await fetch(
+      `/api/validate-cedula?cedula=${encodeURIComponent(cedula)}`,
+    );
     if (!res.ok) {
       return { valid: false, message: "Server error validating credential" };
     }
@@ -53,22 +60,15 @@ export async function validateCedula(cedula: string): Promise<{ valid: boolean; 
   }
 }
 
-
 /**
  * Simulates updating the onboarding status in a database.
  */
 export async function updateOnboardingInDB(userId: number): Promise<boolean> {
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  // Placeholder indicating the SQL query that will run here:
-  /*
-  SQL Query representation:
-  
-  UPDATE users 
-  SET is_onboarded = TRUE 
-  WHERE id = $1;
-  */
-  console.log(`SQL Database query simulation: UPDATE users SET is_onboarded = TRUE WHERE id = '${userId}'`);
+  console.log(
+    `SQL Database query simulation: UPDATE users SET is_onboarded = TRUE WHERE id = '${userId}'`,
+  );
 
   return true;
 }

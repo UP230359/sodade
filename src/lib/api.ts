@@ -6,6 +6,10 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+// ============================================
+// INTERFACES
+// ============================================
+
 export interface Checkin {
   checkin_id: number;
   emotion: string;
@@ -45,13 +49,10 @@ export interface User {
   lastName: string;
   email: string;
   accountType: "personal" | "professional";
-  // Opcionales: los usa el flujo de registro (isOnboarded) y las cuentas
-  // profesionales (cedula); no todos los endpoints los devuelven todavía.
   isOnboarded?: boolean;
   cedula?: string;
 }
 
-// Datos que se mandan al hacer login: email y password en texto plano
 export interface LoginCredentials {
   email: string;
   password: string;
@@ -68,32 +69,55 @@ export interface AuthResponse {
   token: string;
 }
 
-export const getCheckins = async (userId: number): Promise<Checkin[]> => {
-  const { data } = await api.get("/checkins", { params: { userId } });
-  return data;
-};
+export interface FeedCheckin {
+  checkin_id: number;
+  emotion: string;
+  note: string | null;
+  created_at: string;
+}
 
-export const createCheckin = async (
-  checkin: NewCheckin,
-): Promise<{ checkinId: number }> => {
-  const { data } = await api.post("/checkins", checkin);
-  return data;
-};
+export interface InsightTag {
+  tag_id: number;
+  name: string;
+}
 
-export const getJournals = async (userId: number): Promise<Journal[]> => {
-  const { data } = await api.get("/journal", { params: { userId } });
-  return data;
-};
+export interface NewInsight {
+  checkinId: number;
+  professionalId: number;
+  tagId: number | null;
+  content: string;
+}
 
-export const createJournal = async (
-  journal: NewJournal,
-): Promise<{ entry_id: number }> => {
-  const { data } = await api.post("/journal", journal);
-  return data;
-};
+export interface ResponseInsight {
+  insight_id: number;
+  content: string;
+  created_at: string;
+  tag_name: string | null;
+  checkin_note: string | null;
+  checkin_created_at: string;
+  checkin_emotion: string;
+}
 
-// Login: envía email/password al backend, valida contra MySQL
-// y devuelve solo el usuario (sin token, ya que no hay sesión persistente)
+export interface ProfessionalProfile {
+  user_id: number;
+  professional_cedula: string;
+  institution_name: string | null;
+  primary_specialty: string | null;
+  verification_status: "pending" | "active";
+  verification_date: string | null;
+}
+
+export interface NewProfessionalProfile {
+  userId: number;
+  cedula: string;
+  institutionName?: string;
+  primarySpecialty?: string;
+}
+
+// ============================================
+// AUTH & USERS API
+// ============================================
+
 export const loginUser = async (
   credentials: LoginCredentials,
 ): Promise<{ user: User }> => {
@@ -106,6 +130,140 @@ export const registerUser = async (
 ): Promise<AuthResponse> => {
   const { data } = await api.post("/auth/register", credentials);
   return data;
+};
+
+// ============================================
+// CHECKINS API
+// ============================================
+
+export const getCheckins = async (userId: number): Promise<Checkin[]> => {
+  const { data } = await api.get("/checkins", { params: { userId } });
+  return data;
+};
+
+export const createCheckin = async (
+  checkin: NewCheckin,
+): Promise<{ checkinId: number }> => {
+  const { data } = await api.post("/checkins", checkin);
+  return data;
+};
+
+// ============================================
+// JOURNAL API
+// ============================================
+
+export const getJournals = async (userId: number): Promise<Journal[]> => {
+  // Ajustado para mandar user_id en lugar de userId (lo que espera route.ts)
+  const { data } = await api.get("/journal", { params: { user_id: userId } });
+  return data;
+};
+
+export const createJournal = async (journal: {
+  user_id: number;
+  title: string;
+  content: string;
+}): Promise<{ success: boolean; entry: Journal; entry_id: number }> => {
+  const { data } = await api.post("/journal", journal);
+  return data;
+};
+
+export const updateJournal = async (
+  entry_id: number,
+  journal: { title?: string; content?: string },
+): Promise<{ success: boolean; entry: Journal }> => {
+  const { data } = await api.put(`/journal/${entry_id}`, journal);
+  return data;
+};
+
+export const deleteJournal = async (
+  entry_id: number,
+): Promise<{ success: boolean }> => {
+  const { data } = await api.delete(`/journal/${entry_id}`);
+  return data;
+};
+
+// ============================================
+// INSIGHTS API
+// ============================================
+
+export const getInsights = async (params: {
+  user_id?: number;
+  professional_id?: number;
+}) => {
+  const { data } = await api.get("/insights", { params });
+  return data;
+};
+
+export const createInsight = async (
+  insight: NewInsight,
+): Promise<{ success: boolean; insight: any; insight_id: number }> => {
+  // Mapeamos los campos camelCase al snake_case que espera la base de datos
+  const payload = {
+    checkin_id: insight.checkinId,
+    professional_id: insight.professionalId,
+    tag_id: insight.tagId,
+    content: insight.content,
+  };
+  const { data } = await api.post("/insights", payload);
+  return data;
+};
+
+export const deleteInsight = async (
+  insight_id: number,
+): Promise<{ success: boolean }> => {
+  const { data } = await api.delete(`/insights/${insight_id}`);
+  return data;
+};
+
+export const markInsightAsRead = async (
+  insight_id: number,
+): Promise<{ success: boolean }> => {
+  // Si en el futuro agregas la ruta PUT /api/insights/[id] para marcar leídos, esto lo consumirá.
+  // Por ahora lo pasamos para que no falle Redux.
+  const { data } = await api.put(`/insights/${insight_id}`, { is_read: true });
+  return data;
+};
+
+// ============================================
+// PORTAL & PROFESSIONAL API
+// ============================================
+
+export const getFeed = async (): Promise<{
+  checkins: FeedCheckin[];
+  tags: InsightTag[];
+}> => {
+  const { data } = await api.get("/portal/feed");
+  return data;
+};
+
+export const submitInsight = async (
+  insight: NewInsight,
+): Promise<{ insightId: number }> => {
+  const { data } = await api.post("/portal/feed", insight);
+  return data;
+};
+
+export const getResponses = async (
+  professionalId: number,
+): Promise<ResponseInsight[]> => {
+  const { data } = await api.get("/portal/responses", {
+    params: { professionalId },
+  });
+  return data;
+};
+
+export const getProfessionalProfile = async (
+  userId: number,
+): Promise<ProfessionalProfile | null> => {
+  const { data } = await api.get("/portal/verify", { params: { userId } });
+  return data.profile;
+};
+
+export const submitProfessionalProfile = async (
+  profile: NewProfessionalProfile,
+): Promise<ProfessionalProfile> => {
+  const { data } = await api.post("/portal/verify", profile);
+  return data.profile;
 };
 
 export default api;

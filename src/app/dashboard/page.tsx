@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import StreakCounter from "@/components/dashboard/StreakCounter";
 import SummaryCard from "@/components/dashboard/SummaryCard";
@@ -25,8 +24,6 @@ import {
 
 const WEEKDAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 
-// Genera las celdas del mini-calendario del mes actual: null = celda vacía
-// (relleno antes del día 1), número = día del mes.
 function getMonthGrid(year: number, month: number) {
   const firstDay = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -36,33 +33,43 @@ function getMonthGrid(year: number, month: number) {
   return cells;
 }
 
-
-
 export default function DashboardPage() {
   const router = useRouter();
-
-  // El login actual no persiste sesión (sin cookie/token): el usuario solo
-  // existe en Redux mientras dure la pestaña. Se lee directo, sin esperar nada.
-  const { user, isAuthenticated } = useAuth();
-
-  // Estado local (no Redux) porque solo le importa a esta pantalla:
-  // qué modal está abierto y qué emoción se está usando para filtrar.
+  const { user, isAuthenticated, hydrated } = useAuth();
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
   const [emotionFilter, setEmotionFilter] = useState<string | null>(null);
 
-  // Mientras no haya user.id, useCheckins no pide nada a la API.
+  const [dailyReflection, setDailyReflection] = useState<string>("Loading your personalized reflection...");
+  const [wisdom, setWisdom] = useState<{ quote: string; author: string } | null>(null);
+
   const { checkins, error, refetch } = useCheckins(user?.id ?? null);
 
-  // Sin sesión no hay a quién pedirle checkins: se manda al login.
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (hydrated && !isAuthenticated) {
       router.replace("/login");
     }
-  }, [isAuthenticated, router]);
+  }, [hydrated, isAuthenticated, router]);
 
-  // Todo el cálculo (streak, emociones dominantes, patrones semanales...)
-  // vive en moodStats.ts. Aquí solo se llama y se envuelve en useMemo para
-  // no recalcular en cada render si `checkins` no cambió.
+  useEffect(() => {
+    if (!user?.id) return;
+    fetch(`/api/insights/daily?userId=${user.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.reflection) setDailyReflection(data.reflection);
+      })
+      .catch(() => setDailyReflection("Every emotion is a messenger, not a residence."));
+
+    fetch("/api/insights/wisdom")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.quote) setWisdom(data);
+      })
+      .catch(() => setWisdom({
+        quote: "Between stimulus and response there is a space. In that space is our power to choose our response.",
+        author: "Viktor E. Frankl"
+      }));
+  }, [user?.id]);
+
   const { dominant, secondary } = useMemo(() => getDominantEmotions(checkins), [checkins]);
   const streak = useMemo(() => getStreak(checkins), [checkins]);
   const weeklyPatterns = useMemo(() => getWeeklyPatterns(checkins), [checkins]);
@@ -80,19 +87,16 @@ export default function DashboardPage() {
     return weekCheckins.filter((c) => c.emotion.toLowerCase() === emotionFilter);
   }, [weekCheckins, emotionFilter]);
 
-  if (!isAuthenticated) {
-    return null; // el useEffect de arriba ya está redirigiendo
-  }
+  if (!hydrated || !isAuthenticated) return null;
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12 relative">
-      {/* --- Encabezado + Mood Map del mes --- */}
-      <div className="flex items-start justify-between mb-8">
+    <div className="max-w-5xl mx-auto py-8 md:py-12 relative px-4 sm:px-6">
+      <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-6 md:gap-0">
         <div>
-          <p className="text-xs font-semibold tracking-wider text-joy uppercase mb-2">
-            Weekly Reflection
-          </p>
-          <h1 className="font-serif text-4xl font-normal text-foreground leading-tight">
+          <span className="text-xs font-bold tracking-widest text-primary uppercase mb-2 block">
+            Daily Reflection
+          </span>
+          <h1 className="font-serif text-3xl md:text-4xl font-normal text-foreground leading-tight">
             Your Emotional
             <br />
             Journey
@@ -102,7 +106,7 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <Card className="w-56 !p-4">
+        <Card className="w-full md:w-56 !p-4">
           <div className="flex items-center justify-between mb-3">
             <span className="font-semibold text-foreground text-sm">
               {now.toLocaleString("en-US", { month: "long" })}
@@ -123,8 +127,8 @@ export default function DashboardPage() {
               return (
                 <div
                   key={i}
-                  className={`w-5 h-5 rounded-md ${isToday ? "border-2 border-foreground" : ""} ${day === null ? "" : emotion ? emotionSquareClass(emotion) : "bg-muted"
-                    }`}
+                  className={`w-full aspect-square rounded-md ${isToday ? "border-2 border-foreground" : ""
+                    } ${day === null ? "" : emotion ? emotionSquareClass(emotion) : "bg-muted"}`}
                 />
               );
             })}
@@ -132,46 +136,37 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* --- Manejo de error de la API (requisito de la rúbrica: "Consumo de APIs") --- */}
       {error && (
-        <Card className="mb-6 border-anger/40 bg-anger/5">
+        <Card className="mb-6 border-anger/40 bg-anger/10">
           <p className="text-sm text-anger">{error}</p>
-          <Button variant="secondary" className="mt-3" onClick={refetch}>
+          <button
+            className="mt-3 text-sm font-medium text-foreground hover:underline cursor-pointer"
+            onClick={refetch}
+          >
             Try again
-          </Button>
+          </button>
         </Card>
       )}
 
-      {/* --- Timeline Chart --- */}
       <Card className="mb-6">
         <MoodChart />
       </Card>
 
-      {/* --- Texto fijo de reflexión semanal --- */}
       <Card className="mb-6">
-        <p className="text-xs font-semibold tracking-wider text-joy uppercase mb-3">
-          This Week&apos;s Reflection
+        <span className="text-xs font-bold tracking-widest text-primary uppercase mb-3 block">
+          Reflection of the Day
+        </span>
+        <p className="text-foreground leading-relaxed">
+          {dailyReflection}
         </p>
-        <p className="text-foreground mb-4">
-          You began with curiosity and joy, found deep peace midweek, then navigated through
-          unease before returning to stillness and connection. Mindfulness reminds us —{" "}
-          <em>every emotion is a messenger, not a residence.</em>
-        </p>
-        <Button
-          variant="joy"
-          className="!bg-background !text-joy !border !border-joy hover:!bg-joy/5"
-        >
-          Read Related Insight
-        </Button>
       </Card>
 
-      {/* --- 4 tarjetas de resumen --- */}
-      <div className="mb-2">
+      <div className="mb-2 mt-8">
         <h2 className="font-semibold text-foreground">Emotional Balance</h2>
         <p className="text-sm text-secondary">Your emotional composition this week</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         <SummaryCard
           title="Dominant Emotion"
           value={dominant ?? "No data yet"}
@@ -190,25 +185,16 @@ export default function DashboardPage() {
         </SummaryCard>
       </div>
 
-      {/* --- Frase inspiracional fija --- */}
-      <Card className="!bg-foreground !border-none mb-6">
-        <p className="text-xs font-semibold tracking-wider text-joy uppercase mb-3">
+      <Card className="!bg-foreground !text-background !border-none mb-6 relative overflow-hidden">
+        <span className="text-xs font-bold tracking-widest text-amber-400 uppercase mb-3 block">
           Wisdom of the Week
-        </p>
+        </span>
         <p className="italic text-background text-lg mb-4">
-          &quot;Between stimulus and response there is a space. In that space is our power to
-          choose our response.&quot;
+          &quot;{wisdom?.quote ?? "Loading wisdom..."}&quot;
         </p>
-        <p className="text-background/60 text-sm mb-4">— Viktor E. Frankl</p>
-        <Button
-          variant="joy"
-          className="!bg-transparent !text-joy !border !border-joy hover:!bg-joy/10"
-        >
-          Explore Practice →
-        </Button>
+        <p className="text-background/70 text-sm">— {wisdom?.author ?? ""}</p>
       </Card>
 
-      {/* --- Patrones calculados de la semana --- */}
       <Card className="mb-6">
         <h2 className="font-semibold text-foreground">Weekly Patterns</h2>
         <p className="text-sm text-secondary mb-4">What your emotions are revealing</p>
@@ -219,7 +205,7 @@ export default function DashboardPage() {
           ) : (
             weeklyPatterns.map((item, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-sm font-serif text-foreground">
+                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-sm font-serif text-foreground shrink-0">
                   {item.letter}
                 </div>
                 <p className="text-sm text-foreground">{item.text}</p>
@@ -229,7 +215,6 @@ export default function DashboardPage() {
         </div>
       </Card>
 
-      {/* --- Filtro de Core Emotions + lista de reflexiones de la semana --- */}
       <Card className="mb-24">
         <h2 className="font-semibold text-foreground">Core Emotions</h2>
         <div className="flex flex-wrap gap-2 mt-4">
@@ -240,9 +225,9 @@ export default function DashboardPage() {
                 key={emotion.key}
                 type="button"
                 onClick={() => setEmotionFilter(isActive ? null : emotion.key)}
-                className={`text-xs font-semibold uppercase px-4 py-2 rounded-full border transition-colors ${emotionChipClass(
+                className={`text-xs font-semibold uppercase px-4 py-2 rounded-full border transition-colors cursor-pointer ${emotionChipClass(
                   emotion.key,
-                )} ${isActive ? "border-2" : "border-transparent opacity-60 hover:opacity-100"}`}
+                )} ${isActive ? "border-2 border-foreground" : "border-transparent opacity-60 hover:opacity-100"}`}
               >
                 {emotion.label}
               </button>
@@ -263,13 +248,13 @@ export default function DashboardPage() {
             filteredWeekCheckins.slice(0, 5).map((c) => (
               <div
                 key={c.checkin_id}
-                className="flex items-center justify-between bg-muted/50 rounded-xl px-4 py-2"
+                className="flex items-center justify-between bg-muted/30 rounded-xl px-4 py-3"
               >
                 <div>
-                  <span className="text-sm font-semibold text-foreground">{c.emotion}</span>
-                  {c.note && <p className="text-xs text-secondary">{c.note}</p>}
+                  <span className="text-sm font-semibold text-foreground capitalize">{c.emotion}</span>
+                  {c.note && <p className="text-xs text-secondary mt-0.5">{c.note}</p>}
                 </div>
-                <span className="text-xs text-secondary">
+                <span className="text-xs text-secondary shrink-0 ml-4">
                   {new Date(c.created_at).toLocaleDateString("en-US", { weekday: "short" })}
                 </span>
               </div>
@@ -278,10 +263,9 @@ export default function DashboardPage() {
         </div>
       </Card>
 
-      {/* --- Botón flotante que abre el modal de check-in --- */}
       <button
         onClick={() => setIsCheckInOpen(true)}
-        className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-foreground text-background px-6 py-3 rounded-full font-medium shadow-lg hover:bg-foreground/90 transition-colors"
+        className="fixed bottom-8 left-1/2 -translate-x-1/2 w-11/12 md:w-auto bg-foreground text-background px-8 py-3.5 rounded-full font-medium shadow-xl hover:opacity-90 transition-all cursor-pointer z-40"
       >
         Start Today&apos;s Reflection
       </button>

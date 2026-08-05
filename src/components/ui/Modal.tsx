@@ -1,61 +1,62 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title?: string;
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
-export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export default function Modal({ isOpen, onClose, children }: ModalProps) {
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch by mounting the portal only on the client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Close modal when pressing the Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     if (isOpen) {
       window.addEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
     }
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "unset";
-    };
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
-
-  // Render directly via portal; in Next.js client components, document.body is available on client render
-  if (typeof window === "undefined") return null;
+  if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+      {/* Backdrop: Clicking outside the modal closes it */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
-      <div
-        className="relative bg-background border border-neutral/20 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden"
-        role="dialog"
-        aria-modal="true"
-      >
-        {title && (
-          <div className="flex items-center justify-between p-6 border-b border-neutral/10">
-            <h3 className="text-xl font-semibold text-foreground">{title}</h3>
-            <button
-              onClick={onClose}
-              className="text-secondary hover:text-foreground transition-colors cursor-pointer text-2xl leading-none"
-            >
-              &times;
-            </button>
-          </div>
-        )}
-        <div className="p-6">
+
+      {/* 
+        Modal Container: 
+        max-h-[90vh] and overflow-y-auto ensure that if the phone is held horizontally 
+        (landscape), the user can scroll down to the submit button.
+      */}
+      <div className="relative w-full max-w-2xl bg-background rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto flex flex-col">
+        {/* Close Button (X) */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-secondary hover:text-foreground hover:bg-muted rounded-full transition-colors z-10"
+          aria-label="Close modal"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        {/* Modal Content */}
+        <div className="p-1">
           {children}
         </div>
       </div>

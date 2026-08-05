@@ -11,3 +11,22 @@ const pool = mysql.createPool({
 });
 
 export default pool;
+// Prueba rápida de conexión (puedes borrar esto después)
+async function testConnection() {
+  try {
+    // Intenta obtener una conexión del pool
+    const connection = await pool.getConnection();
+    console.log("✅ ¡Conexión exitosa a la base de datos MySQL!");
+
+    // Opcional: Hacer una consulta real para ver tu usuario
+    const [rows] = await connection.query("SELECT email FROM users;");
+    console.log("Usuarios en la BD:", rows);
+
+    // Siempre libera la conexión cuando termines
+    connection.release();
+  } catch (error) {
+    console.error("❌ Error conectando a la base de datos:", error.message);
+  }
+}
+
+testConnection();

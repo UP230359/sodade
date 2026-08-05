@@ -5,20 +5,31 @@ import { MoodEntry, fetchMoodEntries } from "@/store/moodSlice";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useMemo } from "react";
 
-//Aqui defino el color de fondo que le toca a cada emocion
+// Utilizamos los colores semánticos definidos en globals.css
 const MOOD_COLORS: Record<MoodEntry["mood"], string> = {
-  joy: "bg-yellow-100 text-yellow-700",
-  calm: "bg-green-100 text-green-700",
-  sadness: "bg-blue-100 text-blue-700",
-  anger: "bg-red-100 text-red-700",
-  fear: "bg-purple-100 text-purple-700",
-  disgust: "bg-emerald-100 text-emerald-700",
-  surprise: "bg-orange-100 text-orange-700",
-  trust: "bg-indigo-100 text-indigo-700",
+  joy: "bg-joy/10 text-joy",
+  calm: "bg-calm/10 text-calm",
+  sadness: "bg-sadness/10 text-sadness",
+  anger: "bg-anger/10 text-anger",
+  fear: "bg-anxiety/10 text-anxiety", // Fear mapeado a anxiety
+  disgust: "bg-neutral/10 text-neutral", // Disgust mapeado a neutral
+  surprise: "bg-surprise/10 text-surprise",
+  trust: "bg-trust/10 text-trust",
 };
 
-//Aqui defino el nombre que se muestra de cada emocion
-//esto es porque en la base de datos y en el codigo se manejan en minuscula
+// Colores sólidos para los puntitos indicadores
+const MOOD_DOT_COLORS: Record<MoodEntry["mood"], string> = {
+  joy: "bg-joy",
+  calm: "bg-calm",
+  sadness: "bg-sadness",
+  anger: "bg-anger",
+  fear: "bg-anxiety",
+  disgust: "bg-neutral",
+  surprise: "bg-surprise",
+  trust: "bg-trust",
+};
+
+// Nombres para mostrar en la interfaz
 const MOOD_LABELS: Record<MoodEntry["mood"], string> = {
   joy: "Joy",
   calm: "Calm",
@@ -31,33 +42,25 @@ const MOOD_LABELS: Record<MoodEntry["mood"], string> = {
 };
 
 export default function MoodHistory() {
-  //Traigo el dispatch para poder pedir los datos
   const dispatch = useAppDispatch();
-  //Traigo los checkins, si esta cargando y si hubo error desde redux
   const entries = useAppSelector((state) => state.mood.entries);
   const loading = useAppSelector((state) => state.mood.loading);
   const error = useAppSelector((state) => state.mood.error);
-  //Usuario real logueado desde Redux (antes se usaba TEMP_USER_ID fijo)
+
   const { user } = useAuth();
 
-  //Cuando el componente se monta (y ya hay usuario logueado) pido
-  //los checkins de ESE usuario, no de un ID fijo
   useEffect(() => {
     if (user) {
       dispatch(fetchMoodEntries(user.id));
     }
   }, [dispatch, user]);
 
-  //Aqui ordeno los checkins del mas nuevo al mas viejo
-  //uso useMemo para que no se vuelva a ordenar en cada render
   const sortedEntries = useMemo(() => {
     return [...entries].sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
   }, [entries]);
 
-  //Esta funcion le da formato a la fecha
-  //si es hoy o ayer lo dice, si no muestra la fecha normal
   const formatDate = (isoString: string): string => {
     const date = new Date(isoString);
     const today = new Date();
@@ -92,34 +95,31 @@ export default function MoodHistory() {
     });
   };
 
-  //Mientras se estan trayendo los datos se muestra este mensaje
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <h2 className="text-2xl font-serif text-gray-800 mb-4">History</h2>
-        <p className="text-gray-500">Loading your checkins...</p>
+      <div className="bg-background rounded-2xl shadow-lg border border-muted p-8 text-center">
+        <h2 className="text-2xl font-serif text-foreground mb-4">History</h2>
+        <p className="text-secondary">Loading your checkins...</p>
       </div>
     );
   }
 
-  //Si algo fallo al traer los datos se muestra este mensaje
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <h2 className="text-2xl font-serif text-gray-800 mb-4">History</h2>
-        <p className="text-red-500">
+      <div className="bg-background rounded-2xl shadow-lg border border-muted p-8 text-center">
+        <h2 className="text-2xl font-serif text-foreground mb-4">History</h2>
+        <p className="text-anger">
           Couldn&apos;t load your checkins. Please try again later.
         </p>
       </div>
     );
   }
 
-  //Si no hay ningun checkin todavia se muestra este mensaje
   if (sortedEntries.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <h2 className="text-2xl font-serif text-gray-800 mb-4">History</h2>
-        <p className="text-gray-500">
+      <div className="bg-background rounded-2xl shadow-lg border border-muted p-8 text-center">
+        <h2 className="text-2xl font-serif text-foreground mb-4">History</h2>
+        <p className="text-secondary">
           No mood entries yet. Start tracking your emotions to see them here.
         </p>
       </div>
@@ -127,56 +127,50 @@ export default function MoodHistory() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      {/* Titulo de la seccion */}
+    <div className="bg-background rounded-2xl shadow-lg border border-muted p-4 md:p-6">
       <div className="mb-6">
-        <p className="text-xs font-semibold text-orange-600 tracking-wide uppercase">
+        <p className="text-xs font-semibold text-primary tracking-wide uppercase">
           Past Reflections
         </p>
-        <h2 className="text-3xl font-serif text-gray-900">History</h2>
+        <h2 className="text-2xl md:text-3xl font-serif text-foreground">History</h2>
       </div>
 
-      {/* Aqui recorro todos los checkins y pinto una tarjeta por cada uno */}
       <div className="space-y-4">
         {sortedEntries.map((entry) => (
           <div
             key={entry.id}
-            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+            className="border border-muted rounded-xl p-4 hover:shadow-md transition-shadow bg-muted/10"
           >
-            {/* Aqui va el punto de color, el nombre de la emocion y la fecha */}
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-3">
+            <div className="flex items-start justify-between mb-3 gap-2">
+              <div className="flex items-start md:items-center gap-3">
                 <span
-                  className={`w-3 h-3 rounded-full inline-block ${MOOD_COLORS[entry.mood].split(" ")[0]}`}
+                  className={`w-3 h-3 rounded-full shrink-0 mt-1 md:mt-0 ${MOOD_DOT_COLORS[entry.mood]}`}
                 />
                 <div>
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className="font-semibold text-foreground">
                     {MOOD_LABELS[entry.mood]}
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs md:text-sm text-secondary">
                     {formatDate(entry.timestamp)}
                   </p>
                 </div>
               </div>
 
-              {/* Aqui se muestra el nivel de la emocion del 1 al 5 */}
-              <div className={`px-3 py-1 rounded-full text-sm font-medium ${MOOD_COLORS[entry.mood]}`}>
+              <div className={`px-3 py-1 rounded-full text-xs md:text-sm font-medium shrink-0 ${MOOD_COLORS[entry.mood]}`}>
                 {entry.level}/5
               </div>
             </div>
 
-            {/* Aqui se muestra la nota, solo si el usuario escribio algo */}
             {entry.note && (
-              <p className="text-gray-700 mb-3 leading-relaxed">{entry.note}</p>
+              <p className="text-sm md:text-base text-foreground mb-3 leading-relaxed">&quot;{entry.note}&quot;</p>
             )}
 
-            {/* Aqui se muestran los tags, solo si tiene alguno */}
             {entry.tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {entry.tags.map((tag, idx) => (
                   <span
                     key={idx}
-                    className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full"
+                    className="text-xs bg-muted text-secondary px-2.5 py-1 rounded-full border border-muted"
                   >
                     {tag}
                   </span>

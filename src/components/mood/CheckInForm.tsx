@@ -5,10 +5,9 @@ import { submitMoodEntry, fetchMoodEntries } from "@/store/moodSlice";
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 import Badge from "@/components/ui/Badge";
+// Import the corrected MoodType that strictly matches the database
 import MoodSelector, { MoodType } from "@/components/mood/MoodSelector";
 
-//Lista de los tags que puede elegir el usuario para decir que
-//influyo en como se siente, cada uno tiene su color (variant)
 const INFLUENCE_TAGS: { label: string; variant: "primary" | "secondary" | "joy" | "calm" | "sadness" | "anger" | "anxiety" | "neutral" }[] = [
   { label: "Work", variant: "primary" },
   { label: "Family", variant: "calm" },
@@ -20,71 +19,55 @@ const INFLUENCE_TAGS: { label: string; variant: "primary" | "secondary" | "joy" 
 ];
 
 export default function CheckInForm() {
-  //Traigo el dispatch para poder llamar las funciones de redux
   const dispatch = useAppDispatch();
-  //Traigo el estado de submitting para saber si se esta guardando algo
   const submitting = useAppSelector((state) => state.mood.submitting);
-  //Traigo el usuario real logueado desde Redux (antes se usaba TEMP_USER_ID fijo)
   const { user } = useAuth();
 
-  //Esto es para evitar un error de hydration en el boton
-  //en el primer render el estado de redux no siempre coincide entre
-  //servidor y cliente, entonces mientras no este montado lo ignoro
+  const [shareAnonymously, setShareAnonymously] = useState(true);
   const [mounted, setMounted] = useState(false);
-  //Aqui pongo mounted en true una sola vez cuando ya cargo el componente
-  //esto ya lo revise y es normal que el linter marque advertencia aqui
+
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
-  //Estados locales del formulario
+  // Now bound strictly to the 8 valid emotions
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [note, setNote] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  //Esta funcion agrega o quita un tag cuando le dan click
-  //si ya estaba seleccionado lo quita, si no estaba lo agrega
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
   };
 
-  //Esta funcion se ejecuta cuando se manda el formulario
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    //Si no eligio ninguna emocion no dejo que mande el formulario
     if (!selectedMood) {
       alert("Please select an emotion");
       return;
     }
 
-    //Sin usuario logueado no hay a nombre de quien guardar el checkin
     if (!user) {
       alert("Please log in again");
       return;
     }
 
     try {
-      //Aqui se manda la peticion a la api usando axios
-      //y se guarda el resultado en redux
       await dispatch(
         submitMoodEntry({
           userId: user.id,
           mood: selectedMood,
           note: note || `I'm feeling ${selectedMood}`,
           tags: selectedTags,
+          sharedAnonymously: shareAnonymously,
         }),
       ).unwrap();
 
-      //Se vuelve a pedir la lista para que el historial quede actualizado
       await dispatch(fetchMoodEntries(user.id));
-
-      //Se muestra el mensaje de que ya se guardo
       setSubmitted(true);
 
-      //Se limpia el formulario despues de un rato
       setTimeout(() => {
         setSelectedMood(null);
         setSelectedTags([]);
@@ -92,20 +75,18 @@ export default function CheckInForm() {
         setSubmitted(false);
       }, 1500);
     } catch (err) {
-      //Si algo sale mal se muestra una alerta simple
       console.error(err);
       alert("No se pudo guardar tu reflexión. Intenta de nuevo.");
     }
   };
 
-  //Si ya se guardo el checkin se muestra este mensaje en vez del formulario
   if (submitted) {
     return (
-      <div className="bg-white rounded-2xl shadow-lg p-12 max-w-2xl mx-auto text-center">
-        <h2 className="text-2xl font-serif text-gray-900 mb-2">
+      <div className="text-center p-6 md:p-8">
+        <h2 className="text-2xl font-serif text-foreground mb-2">
           Emotion logged!
         </h2>
-        <p className="text-gray-600">
+        <p className="text-secondary">
           Your reflection has been saved. Check your history to see it.
         </p>
       </div>
@@ -113,31 +94,26 @@ export default function CheckInForm() {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-8 max-w-2xl mx-auto">
+    <div className="p-2 md:p-6">
       <form onSubmit={handleSubmit}>
-        {/* Aqui va el titulo del formulario */}
         <div className="text-center mb-8">
-          <p className="text-xs font-semibold text-orange-600 tracking-wide uppercase mb-2">
+          <p className="text-xs font-semibold text-primary tracking-wide uppercase mb-2">
             Daily Check-in
           </p>
-          <h2 className="text-3xl font-serif text-gray-900">
+          <h2 className="text-2xl md:text-3xl font-serif text-foreground">
             How are you feeling?
           </h2>
         </div>
 
-        {/* Aqui uso el componente MoodSelector para elegir la emocion */}
-        {/* le paso la emocion actual y la funcion para cambiarla */}
         <div className="mb-8">
-          <p className="text-sm font-semibold text-gray-900 mb-4">
+          <p className="text-sm font-semibold text-foreground mb-4">
             Select your primary emotion
           </p>
           <MoodSelector selected={selectedMood} onSelect={setSelectedMood} />
         </div>
 
-        {/* Aqui se pintan los tags opcionales usando el componente Badge */}
-        {/* si el tag ya esta seleccionado se le pone un anillo alrededor */}
         <div className="mb-8">
-          <p className="text-sm font-semibold text-gray-900 mb-4">
+          <p className="text-sm font-semibold text-foreground mb-4">
             What is influencing this? (Optional)
           </p>
           <div className="flex flex-wrap gap-2">
@@ -146,17 +122,12 @@ export default function CheckInForm() {
                 key={tag.label}
                 type="button"
                 onClick={() => toggleTag(tag.label)}
-                className={`transition-all transform ${
-                  selectedTags.includes(tag.label) ? "scale-110" : "scale-100"
-                }`}
+                className={`transition-all transform ${selectedTags.includes(tag.label) ? "scale-105" : "scale-100"}`}
               >
                 <Badge
                   variant={tag.variant}
-                  className={`cursor-pointer ${
-                    selectedTags.includes(tag.label)
-                      ? "ring-2 ring-offset-2 ring-gray-400"
-                      : ""
-                  }`}
+                  className={`cursor-pointer ${selectedTags.includes(tag.label) ? "ring-2 ring-offset-2 ring-foreground/30" : ""
+                    }`}
                 >
                   {tag.label}
                 </Badge>
@@ -165,26 +136,35 @@ export default function CheckInForm() {
           </div>
         </div>
 
-        {/* Aqui va el cuadro de texto para escribir la nota opcional */}
         <div className="mb-8">
-          <p className="text-sm font-semibold text-gray-900 mb-4">
+          <p className="text-sm font-semibold text-foreground mb-4">
             Add a brief note (Optional)
           </p>
+          <div className="mb-6 flex items-start gap-3 bg-muted/30 p-3 rounded-lg">
+            <input
+              id="shareAnonymously"
+              type="checkbox"
+              checked={shareAnonymously}
+              onChange={(e) => setShareAnonymously(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded-sm border-muted text-primary focus:ring-primary cursor-pointer shrink-0"
+            />
+            <label htmlFor="shareAnonymously" className="text-sm text-secondary cursor-pointer select-none leading-tight">
+              Share this reflection anonymously with a verified professional so they can offer guidance.
+            </label>
+          </div>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="What's on your mind? Write anything..."
-            className="w-full p-4 border border-gray-200 rounded-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
-            rows={5}
+            className="w-full p-4 border border-muted bg-background rounded-lg text-foreground placeholder-secondary focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+            rows={4}
           />
         </div>
 
-        {/* Boton para mandar el formulario */}
-        {/* se desactiva si no hay emocion elegida o si se esta guardando */}
         <div className="flex justify-center">
           <button
             type="submit"
-            className="px-8 py-3 bg-gray-900 text-white font-semibold rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50"
+            className="w-full md:w-auto px-8 py-3 bg-foreground text-background font-semibold rounded-full hover:bg-foreground/90 transition-colors disabled:opacity-50"
             disabled={!selectedMood || (mounted && submitting)}
           >
             {submitting ? "Saving..." : "Log Reflection"}
@@ -192,15 +172,13 @@ export default function CheckInForm() {
         </div>
       </form>
 
-      {/* Este cuadro solo se muestra si ya se eligio una emocion */}
-      {/* sirve para que el usuario vea un resumen antes de mandar */}
       {selectedMood && (
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-sm text-gray-700">
-            <span className="font-semibold">Emotion:</span> {selectedMood}
+        <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-muted text-left">
+          <p className="text-sm text-foreground">
+            <span className="font-semibold">Emotion:</span> <span className="capitalize">{selectedMood}</span>
           </p>
           {selectedTags.length > 0 && (
-            <p className="text-sm text-gray-700 mt-2">
+            <p className="text-sm text-foreground mt-2">
               <span className="font-semibold">Factors:</span> {selectedTags.join(", ")}
             </p>
           )}
