@@ -1,5 +1,7 @@
 import mysql from "mysql2/promise";
 
+console.log("🔍 DATABASE_URL configured:", !!process.env.DATABASE_URL);
+
 const pool = process.env.DATABASE_URL
   ? mysql.createPool(process.env.DATABASE_URL)
   : mysql.createPool({
