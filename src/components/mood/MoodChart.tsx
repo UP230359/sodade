@@ -56,6 +56,9 @@ export default function MoodChart() {
     const mostCommonMood = Object.entries(moodCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || "calm";
     const latest = entries.length > 0 ? chartDataPoints[chartDataPoints.length - 1] : null;
 
+    // Use a fixed reference point or derive cleanly to keep the memo pure
+    const weekAgoTime = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
     return {
       chartData: chartDataPoints,
       latestEntry: latest,
@@ -63,7 +66,7 @@ export default function MoodChart() {
         totalEntries: entries.length,
         mostCommonMood,
         lastWeekEntries: entries.filter(
-          (e) => new Date(e.timestamp).getTime() > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).getTime()
+          (e) => new Date(e.timestamp).getTime() > weekAgoTime
         ).length,
         moodCounts,
       },
@@ -95,7 +98,7 @@ export default function MoodChart() {
         {entries.length > 0 && (
           <button
             onClick={downloadPDF}
-            className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm shrink-0"
+            className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm shrink-0 cursor-pointer"
           >
             Download PDF
           </button>

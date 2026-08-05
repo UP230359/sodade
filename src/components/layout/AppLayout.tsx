@@ -10,6 +10,7 @@ import Footer from "./Footer";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+
   const { isAuthenticated, hydrated } = useAuth();
 
   const isAuthPage = pathname === "/login" || pathname === "/register";
@@ -22,7 +23,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [hydrated, isAuthenticated, isAuthPage, router]);
 
   useEffect(() => {
-    setIsSidebarOpen(false);
+    queueMicrotask(() => setIsSidebarOpen(false));
   }, [pathname]);
 
   if (isAuthPage) {

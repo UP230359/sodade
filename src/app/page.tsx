@@ -21,7 +21,7 @@ export default function LandingPage() {
     if (hasVisited) {
       router.replace("/login");
     } else {
-      setIsChecking(false);
+      queueMicrotask(() => setIsChecking(false));
     }
   }, [hydrated, isAuthenticated, router]);
 

@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useAppDispatch } from "@/store/index";
 import { logout } from "@/store/userSlice";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const personalLinks = [
   { href: "/dashboard", label: "Dashboard" },
@@ -29,14 +29,13 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const { user, isAuthenticated } = useAuth();
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const [isDark, setIsDark] = useState(false);
+
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return document.documentElement.classList.contains("dark");
+  });
 
   const links = user?.accountType === "professional" ? professionalLinks : personalLinks;
-
-  useEffect(() => {
-    const isDarkMode = document.documentElement.classList.contains("dark");
-    setIsDark(isDarkMode);
-  }, []);
 
   const toggleTheme = () => {
     if (document.documentElement.classList.contains("dark")) {
